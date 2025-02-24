@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DriverMenu from "../../screens/driverScreens/menu/driverMenu.jsx";
+import DriverMenu from "../../screens/driverScreens/home/driverMenu.jsx";
 
 const Stack = createNativeStackNavigator();
 

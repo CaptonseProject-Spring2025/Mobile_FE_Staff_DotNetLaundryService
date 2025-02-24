@@ -8,11 +8,13 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Image
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { Image } from "expo-image";
 const { width } = Dimensions.get("window");
+
+
 export function LoginScreen({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
@@ -23,7 +25,13 @@ export function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior="position">
+      <View style={styles.header}>
+        <Image
+          source={require("../../assets/logo-removebg-preview.png")}
+          style={styles.logo}
+        />
+      </View>
+        <KeyboardAvoidingView  behavior="position">
           <View style={styles.inputContainer}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons
@@ -68,27 +76,6 @@ export function LoginScreen({ navigation }) {
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>Đăng Nhập</Text>
           </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.orText}>Hoặc đăng nhập với</Text>
-            <View style={styles.line} />
-          </View>
-
-          <View style={styles.socialButtonsContainer}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require("../../assets/images/pngtree-google-internet-icon-vector-png-image_9183287.png")}
-                style={styles.socialIcon}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require("../../assets/images/Facebook-logo.png")}
-                style={styles.socialIconFacebook}
-              />
-            </TouchableOpacity>
-          </View>
         </KeyboardAvoidingView>
       </ScrollView>
     </SafeAreaView>
@@ -103,7 +90,16 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     alignItems: "center",
-    paddingVertical: 20,
+  },
+  header: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 50,
+    backgroundColor: "#fff",
+  },
+  logo: {
+    width: 200,
+    height: 200,
   },
   icon: {
     marginRight: 10,
@@ -111,7 +107,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     width: width * 0.9,
     marginBottom: 20,
-    marginTop: 40,
+    marginTop: 20,
     paddingHorizontal: 5,
   },
   label: {
@@ -151,43 +147,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ccc",
-    marginHorizontal: 30,
-  },
-  orText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  socialButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 10,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  socialIcon: {
-    width: 24,
-    height: 24,
-  },
-  socialIconFacebook: {
-    width: 34,
-    height: 34,
   },
 });

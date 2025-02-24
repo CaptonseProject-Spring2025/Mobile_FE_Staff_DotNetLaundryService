@@ -10,9 +10,9 @@ export default function SplashScreenComponent() {
   useEffect(() => {
     async function loadAssetsAsync() {
       await Asset.loadAsync([
-        require("../assets/images/logo-removebg-preview.png"),
-        require("../assets/images/Vector3.png"),
-        require("../assets/images/Vector4.png"),
+        require("../assets/logo-removebg-preview.png"),
+        require("../assets/Vector3.png"),
+        require("../assets/Vector4.png"),
       ]);
       setAssetsLoaded(true);
     }
@@ -39,7 +39,7 @@ export default function SplashScreenComponent() {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.Image
-        source={require("../assets/images/Vector3.png")}
+        source={require("../assets/Vector3.png")}
         style={[
           styles.topVector,
           {
@@ -48,11 +48,11 @@ export default function SplashScreenComponent() {
         ]}
       />
       <Image
-        source={require("../assets/images/logo-removebg-preview.png")}
+        source={require("../assets/logo-removebg-preview.png")}
         style={styles.logo}
       />
       <Animated.Image
-        source={require("../assets/images/Vector4.png")}
+        source={require("../assets/Vector4.png")}
         style={[
           styles.bottomVector,
           {

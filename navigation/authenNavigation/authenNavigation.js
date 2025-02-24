@@ -1,25 +1,13 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { TabAuthenNavigation } from "./authen.js";
-import { OtpVerifyScreen } from "../../screens/authen/otpVerify.jsx";
-import { ContactScreen } from "../../screens/authen/contactScreen.jsx";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { LoginScreen } from "../../screens/authen/login";
 const Stack = createNativeStackNavigator();
 
 export const AuthenNavigation = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="TabAuthen"
-        component={TabAuthenNavigation}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="OtpVerify"
-        component={OtpVerifyScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Contact"
-        component={ContactScreen}
+        name="login"
+        component={LoginScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

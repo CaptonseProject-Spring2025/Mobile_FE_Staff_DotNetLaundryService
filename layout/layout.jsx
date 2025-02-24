@@ -23,7 +23,7 @@ const Layout = () => {
         {isLoading ? (
           <Loading />
         ) : (
-          <Stack.Navigator initialRouteName="User">
+          <Stack.Navigator initialRouteName="authen">
             <Stack.Screen
               name="Driver"
               component={DriverBottomNavigationTab}
