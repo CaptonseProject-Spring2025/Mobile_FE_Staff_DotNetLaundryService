@@ -1,16 +1,10 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import {
-  DriverHomeScreen,
-  DriverStatisticScreen,
-  DriverChatScreen,
-  DriverNotificationScreen,
-  DriverAccountScreen,
-} from "./driverNavigation.js";
+import { StaffHomeScreen, StaffAccountScreen } from "./staffNavigation.js";
 import Octicons from "react-native-vector-icons/Octicons";
 const Tab = createBottomTabNavigator();
 
-const DriverBottomNavigationTab = () => {
+const StaffBottomNavigationTab = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -18,15 +12,9 @@ const DriverBottomNavigationTab = () => {
           let iconName;
           if (route.name === "Trang chủ") {
             iconName = focused ? "home" : "home";
-          } else if (route.name === "Thống kê") {
-            iconName = focused ? "checklist" : "checklist";
-          } else if (route.name === "Inbox") {
-            iconName = focused
-              ? "comment-discussion"
-              : "comment-discussion";
           } else if (route.name === "Thông báo") {
             iconName = focused ? "bell" : "bell";
-          }else if (route.name === "Tài khoản") {
+          } else if (route.name === "Tài khoản") {
             iconName = focused ? "person" : "person";
           }
           return <Octicons name={iconName} color={color} size={24} />;
@@ -38,35 +26,21 @@ const DriverBottomNavigationTab = () => {
     >
       <Tab.Screen
         name="Trang chủ"
-        component={DriverHomeScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tab.Screen
-        name="Thống kê"
-        component={DriverHomeScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tab.Screen
-        name="Inbox"
-        component={DriverHomeScreen}
+        component={StaffHomeScreen}
         options={{
           headerShown: false,
         }}
       />
       <Tab.Screen
         name="Thông báo"
-        component={DriverHomeScreen}
+        component={StaffHomeScreen}
         options={{
           headerShown: false,
         }}
       />
       <Tab.Screen
         name="Tài khoản"
-        component={DriverAccountScreen}
+        component={StaffAccountScreen}
         options={{
           headerShown: false,
         }}
@@ -75,4 +49,4 @@ const DriverBottomNavigationTab = () => {
   );
 };
 
-export default DriverBottomNavigationTab;
+export default StaffBottomNavigationTab;

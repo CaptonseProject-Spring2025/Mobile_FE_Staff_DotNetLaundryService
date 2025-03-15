@@ -5,7 +5,7 @@ import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
-export function DriverHomeScreen() {
+export function StaffHomeScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -18,7 +18,7 @@ export function DriverHomeScreen() {
 }
 
 //man hinh thong ke
-export function DriverStatisticScreen() {
+export function StaffStatisticScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -30,21 +30,9 @@ export function DriverStatisticScreen() {
   );
 }
 
-//man hinh chat
-export function DriverChatScreen() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="DriverChat"
-        component={DriverChat}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-}
 
 //man hinh thong bao
-export function DriverNotificationScreen() {
+export function StaffNotificationScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -57,7 +45,7 @@ export function DriverNotificationScreen() {
 }
 
 //man hinh tai khoan
-export function DriverAccountScreen() {
+export function StaffAccountScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
