@@ -71,19 +71,14 @@ export default function LoginScreen({ navigation }) {
     setLoginError("");
     const isPhoneValid = validatePhone();
     const isPasswordValid = validatePassword();
-
+  
     if (!isPhoneValid || !isPasswordValid) {
       return;
     }
-
+  
     const result = await login(phoneNumber, password);
-
-    if (result.success) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Unauthorized" }],
-      });
-    } else {
+  
+    if (!result.success) {
       // Show error message
       setLoginError("Sai số điện thoại hoặc mật khẩu");
     }

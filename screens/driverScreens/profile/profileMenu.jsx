@@ -55,7 +55,7 @@ export default function ProfileMenu({ navigation }) {
       id: "1",
       title: "Thông tin cá nhân",
       icon: "location-outline",
-      screen: "Address",
+      screen: "updateProfile",
       requiresAuth: true,
     },
     {
@@ -117,10 +117,6 @@ export default function ProfileMenu({ navigation }) {
               color="#FFFFFF"
             />
           )}
-          {/* Edit Button */}
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="pencil" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
 
         {/* User Info */}

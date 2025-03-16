@@ -1,36 +1,23 @@
 import { create } from "zustand";
-import axiosClient from "../config/axiosClient.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axiosClient from "../config/axiosClient";
+import {
+  isTokenValid,
+  isRefreshTokenValid,
+  shouldRefreshToken,
+  STORAGE_KEYS,
+} from "../utils/authUtils";
 
-const STORAGE_KEYS = {
-  TOKEN: "token",
-  REFRESH_TOKEN: "refreshToken",
-  REFRESH_TOKEN_EXPIRY: "refreshTokenExpiry",
-  USER_ID: "userId",
-  USER_DETAIL: "userDetail",
-  USER: "user", 
-};
-
-const isTokenValid = (token) => {
-  if (!token) return false;
-
-  try {
-    const decoded = parseJwt(token);
-    const currentTime = Date.now() / 1000;
-
-    // Check if token is expired or will expire in the next 2 minutes
-    return decoded.exp && decoded.exp > currentTime + 120;
-  } catch (error) {
-    return false;
-  }
-};
+// Centralized function to handle token refresh
+let isRefreshInProgress = false;
+let refreshPromise = null;
 
 const useAuthStore = create((set, get) => ({
   userId: null,
   userDetail: null,
-  user: null,
   token: null,
   refreshToken: null,
+  refreshTokenExpiry: null,
   isAuthenticated: false,
   isLoading: false,
   otpToken: null,
@@ -39,20 +26,26 @@ const useAuthStore = create((set, get) => ({
     phoneNumber: "",
     password: "",
   },
-  // Check if token is valid (can be used elsewhere in the app)
-  isTokenValid,
 
   // Initialize auth state from storage
   initialize: async () => {
     try {
       // Get tokens from storage
-      const [token, refreshToken] = await Promise.all([
+      const [token, refreshToken, refreshTokenExpiry] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.TOKEN),
         AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
+        AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRY),
       ]);
 
       if (!token || !refreshToken) {
         // No tokens available, ensure logged out state
+        await get().logoutSilent();
+        return false;
+      }
+
+      // First check if refresh token is still valid
+      if (!isRefreshTokenValid(refreshTokenExpiry)) {
+        console.log("Refresh token has expired during initialization");
         await get().logoutSilent();
         return false;
       }
@@ -67,41 +60,38 @@ const useAuthStore = create((set, get) => ({
         }
       } else {
         // Token is valid, set it in state
-        set({ token, refreshToken });
-      }
+        set({
+          token,
+          refreshToken,
+          refreshTokenExpiry,
+          isAuthenticated: true,
+          lastTokenCheck: Date.now(),
+        });
 
-      // Load user data
-      const [userIdStr, userDetailJson] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
-        AsyncStorage.getItem(STORAGE_KEYS.USER_DETAIL),
-      ]);
+        // Also try to load user ID and details
+        try {
+          const userId = await AsyncStorage.getItem(STORAGE_KEYS.USER_ID);
+          const userDetailStr = await AsyncStorage.getItem(
+            STORAGE_KEYS.USER_DETAIL
+          );
 
-      const userId = userIdStr || null;
-      const userDetail = userDetailJson ? JSON.parse(userDetailJson) : null;
+          if (userId) {
+            set({ userId: parseInt(userId, 10) });
 
-      // If we have a userId but no detail, try to fetch it
-      if (userId && !userDetail) {
-        const fetchSuccess = await get().fetchUserDetail(userId);
-        if (!fetchSuccess) {
-          // Continue anyway since we have valid tokens
-          console.log("Failed to fetch user details but continuing with auth");
+            if (userDetailStr) {
+              set({ userDetail: JSON.parse(userDetailStr) });
+            } else {
+              // If we have userId but no details, fetch them
+              await get().fetchUserDetail(parseInt(userId, 10));
+            }
+          }
+        } catch (error) {
+          console.error(
+            "Error loading user data during initialization:",
+            error
+          );
         }
-      } else if (userId && userDetail) {
-        // Set user details from storage
-        set({ userDetail });
-      } else if (!userId) {
-        // If we don't have a userId, something's wrong
-        console.error("No userId found during initialization");
-        await get().logoutSilent();
-        return false;
       }
-
-      // Set auth state with available data
-      set({
-        userId,
-        isAuthenticated: true,
-        lastTokenCheck: Date.now(),
-      });
 
       return true;
     } catch (error) {
@@ -127,6 +117,12 @@ const useAuthStore = create((set, get) => ({
       return await get().refreshAuthToken();
     }
 
+    // If token is valid but close to expiration, refresh proactively
+    if (shouldRefreshToken(token)) {
+      console.log("Token will expire soon, refreshing proactively");
+      return await get().refreshAuthToken();
+    }
+
     set({ lastTokenCheck: now });
     return true;
   },
@@ -149,11 +145,11 @@ const useAuthStore = create((set, get) => ({
         [STORAGE_KEYS.REFRESH_TOKEN_EXPIRY, refreshTokenExpiry],
         [STORAGE_KEYS.USER_ID, userId.toString()],
       ]);
-
       // Set authentication state
       set({
         token,
         refreshToken,
+        refreshTokenExpiry,
         userId,
         isAuthenticated: true,
         isLoading: false,
@@ -193,68 +189,108 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Refresh authentication token
+  // Refresh authentication token - centralized function
   refreshAuthToken: async () => {
-    // Get refresh token from state first, fall back to storage if needed
-    let refreshToken = get().refreshToken;
+    // If a refresh is already in progress, return that promise
+    if (isRefreshInProgress && refreshPromise) {
+      return refreshPromise;
+    }
 
-    if (!refreshToken) {
-      // If not in state, try to get from storage
-      refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    // Set refresh as in progress and create a new promise
+    isRefreshInProgress = true;
+    refreshPromise = (async () => {
+      // Get refresh token from state first, fall back to storage if needed
+      let refreshToken = get().refreshToken;
+      let refreshTokenExpiry = get().refreshTokenExpiry;
+
       if (!refreshToken) {
-        console.log("No refresh token available");
-        return false;
-      }
-    }
+        // If not in state, try to get from storage
+        [refreshToken, refreshTokenExpiry] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
+          AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRY),
+        ]);
 
-    try {
-      const response = await axiosClient.post("/auth/refresh-token", {
-        refreshToken,
-      });
-
-      // Extract tokens from response
-      const newToken = response.data?.accessToken;
-      const newRefreshToken = response.data?.refreshToken;
-
-      if (!newToken) {
-        console.error("Token refresh response did not include a token");
-        return false;
+        if (!refreshToken) {
+          console.log("No refresh token available");
+          isRefreshInProgress = false;
+          refreshPromise = null;
+          return false;
+        }
       }
 
-      // CRITICAL: If no new refresh token is provided, logout the user
-      // because the old refresh token is likely invalid now
-      if (!newRefreshToken) {
-        console.warn("No new refresh token provided, forcing logout");
+      // Check if refresh token is expired before attempting to use it
+      if (!isRefreshTokenValid(refreshTokenExpiry)) {
+        console.log("Refresh token has expired, cannot refresh access token");
         await get().logoutSilent();
+        isRefreshInProgress = false;
+        refreshPromise = null;
         return false;
       }
 
-      // Update tokens in storage and state
-      const updates = [
-        [STORAGE_KEYS.TOKEN, newToken],
-        [STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken]
-      ];
+      try {
+        // Use direct axios call to bypass interceptors and prevent loops
+        const response = await axiosClient.post("/auth/refresh-token", {
+          refreshToken: refreshToken,
+        });
 
-      await AsyncStorage.multiSet(updates);
+        // Extract tokens from response
+        const newToken = response.data?.accessToken || response.data?.token;
+        const newRefreshToken = response.data?.refreshToken;
+        const newRefreshTokenExpiry = response.data?.refreshTokenExpiry;
 
-      set({
-        token: newToken,
-        refreshToken: newRefreshToken, 
-        lastTokenCheck: Date.now(),
-      });
+        if (!newToken) {
+          console.error("Token refresh response did not include a token");
+          isRefreshInProgress = false;
+          refreshPromise = null;
+          return false;
+        }
 
-      return true;
-    } catch (error) {
-      console.error("Token refresh failed", error);
-      
-      // If refresh fails with 400/401, the refresh token is likely invalid
-      if (error.response && (error.response.status === 400 || error.response.status === 401)) {
-        console.warn("Token refresh returned error status, logging out");
-        await get().logoutSilent();
+        // Update tokens in storage and state
+        const updates = [[STORAGE_KEYS.TOKEN, newToken]];
+
+        if (newRefreshToken) {
+          updates.push([STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken]);
+        }
+
+        if (newRefreshTokenExpiry) {
+          updates.push([
+            STORAGE_KEYS.REFRESH_TOKEN_EXPIRY,
+            newRefreshTokenExpiry,
+          ]);
+        }
+
+        await AsyncStorage.multiSet(updates);
+
+        set({
+          token: newToken,
+          refreshToken: newRefreshToken || refreshToken,
+          refreshTokenExpiry: newRefreshTokenExpiry || refreshTokenExpiry,
+          lastTokenCheck: Date.now(),
+        });
+
+        isRefreshInProgress = false;
+        refreshPromise = null;
+        return true;
+      } catch (error) {
+        console.error("Token refresh failed", error);
+
+        // If refresh fails with 400/401, the refresh token is likely invalid
+        if (
+          error.response &&
+          (error.response.status === 400 || error.response.status === 401)
+        ) {
+          console.warn("Token refresh returned error status, logging out");
+          console.log(error.response.data);
+          await get().logoutSilent();
+        }
+
+        isRefreshInProgress = false;
+        refreshPromise = null;
+        return false;
       }
-      
-      return false;
-    }
+    })();
+
+    return refreshPromise;
   },
 
   // Send OTP
@@ -322,12 +358,13 @@ const useAuthStore = create((set, get) => ({
         registerData
       );
 
-      const { userId, token, refreshToken } = response.data;
+      const { userId, token, refreshToken, refreshTokenExpiry } = response.data;
 
       // Store essential auth data all at once
       await AsyncStorage.multiSet([
         [STORAGE_KEYS.TOKEN, token],
         [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
+        [STORAGE_KEYS.REFRESH_TOKEN_EXPIRY, refreshTokenExpiry],
         [STORAGE_KEYS.USER_ID, userId.toString()],
       ]);
 
@@ -335,6 +372,7 @@ const useAuthStore = create((set, get) => ({
       set({
         token,
         refreshToken,
+        refreshTokenExpiry,
         userId,
         isAuthenticated: true,
         isLoading: false,
@@ -361,19 +399,26 @@ const useAuthStore = create((set, get) => ({
   // Logout
   logout: async () => {
     try {
-      // Try to call logout API
-      const token = get().token;
-      if (token) {
-        try {
-          await axiosClient.post("/Auth/logout");
-        } catch (error) {
-          // Continue with local logout even if API call fails
-        }
-      }
+      // Clear all auth data from storage
+      await AsyncStorage.multiRemove([
+        STORAGE_KEYS.TOKEN,
+        STORAGE_KEYS.REFRESH_TOKEN,
+        STORAGE_KEYS.REFRESH_TOKEN_EXPIRY,
+        STORAGE_KEYS.USER_ID,
+        STORAGE_KEYS.USER_DETAIL,
+      ]);
 
-      // Perform local logout
-      await get().logoutSilent();
-      console.log("check storage", await AsyncStorage.getAllKeys());
+      // Reset state
+      set({
+        token: null,
+        refreshToken: null,
+        refreshTokenExpiry: null,
+        userId: null,
+        userDetail: null,
+        isAuthenticated: false,
+        lastTokenCheck: 0,
+      });
+
       return true;
     } catch (error) {
       console.error("Logout failed:", error);
@@ -383,35 +428,27 @@ const useAuthStore = create((set, get) => ({
 
   logoutSilent: async () => {
     try {
-      // Clear all auth data
+      // Clear all auth data from storage
       await AsyncStorage.multiRemove([
         STORAGE_KEYS.TOKEN,
         STORAGE_KEYS.REFRESH_TOKEN,
         STORAGE_KEYS.REFRESH_TOKEN_EXPIRY,
         STORAGE_KEYS.USER_ID,
         STORAGE_KEYS.USER_DETAIL,
-        STORAGE_KEYS.USER,
       ]);
 
       // Reset state
       set({
         token: null,
         refreshToken: null,
+        refreshTokenExpiry: null,
         userId: null,
         userDetail: null,
         isAuthenticated: false,
-        otpToken: null,
         lastTokenCheck: 0,
-        tempRegisterData: {
-          phoneNumber: "",
-          password: "",
-        },
       });
-
-      return true;
     } catch (error) {
       console.error("Silent logout failed:", error);
-      return false;
     }
   },
 
@@ -419,7 +456,7 @@ const useAuthStore = create((set, get) => ({
   resetPassword: async (phone, password) => {
     set({ isLoading: true });
     try {
-      const response = await axiosClient.post("/Auth/reset-password", {
+      const response = await axiosClient.post("/auth/reset-password", {
         phone,
         password,
       });
@@ -435,59 +472,39 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Method to update user details in authStore
+  setUserDetail: (userDetail) => {
+    if (!userDetail) return;
+
+    // Update in state
+    set({ userDetail });
+
+    // Also update in AsyncStorage (ensure consistency)
+    try {
+      AsyncStorage.setItem(
+        STORAGE_KEYS.USER_DETAIL,
+        JSON.stringify(userDetail)
+      );
+    } catch (error) {
+      console.error("Failed to save user details to storage:", error);
+    }
+  },
+
   // Debug function to log AsyncStorage contents
   debugAsyncStorage: async () => {
     try {
-      // Get all auth-related items
-      const [token, refreshToken, refreshTokenExpiry, userJson] =
-        await Promise.all([
-          AsyncStorage.getItem("token"),
-          AsyncStorage.getItem("refreshToken"),
-          AsyncStorage.getItem("refreshTokenExpiry"),
-          AsyncStorage.getItem("user"),
-        ]);
+      const keys = await AsyncStorage.getAllKeys();
+      const result = await AsyncStorage.multiGet(keys);
 
-      const user = userJson ? JSON.parse(userJson) : null;
+      const filteredResult = result.filter(
+        (item) => !item[0].includes("persist:") && !item[0].includes("MMKV")
+      );
 
-      console.log("===== AsyncStorage Debug =====");
-      console.log("Token exists:", !!token);
-      if (token) {
-        // Only log a part of the token for security
-        console.log("Token preview:", token.substring(0, 15) + "...");
-
-        // Parse and show expiration
-        const tokenData = parseJwt(token);
-        const expDate = new Date(tokenData.exp * 1000);
-        console.log("Token expires:", expDate.toLocaleString());
-      }
-
-      console.log("RefreshToken exists:", !!refreshToken);
-      if (refreshToken) {
-        // Only log a part of the refresh token for security
-        console.log(
-          "Refresh Token preview:",
-          refreshToken.substring(0, 10) + "..."
-        );
-      }
-
-      console.log("RefreshTokenExpiry:", refreshTokenExpiry || "Not set");
-      if (refreshTokenExpiry) {
-        const expiryDate = new Date(refreshTokenExpiry);
-        console.log("Refresh Token expires:", expiryDate.toLocaleString());
-      }
-
-      console.log("User data:", user);
-      console.log("===== End Debug =====");
-
-      return {
-        hasToken: !!token,
-        hasRefreshToken: !!refreshToken,
-        hasRefreshTokenExpiry: !!refreshTokenExpiry,
-        hasUserData: !!user,
-      };
+      console.log("AsyncStorage Contents:", Object.fromEntries(filteredResult));
+      return Object.fromEntries(filteredResult);
     } catch (error) {
-      console.error("Error debugging AsyncStorage:", error);
-      return null;
+      console.error("Failed to debug AsyncStorage:", error);
+      return {};
     }
   },
 
@@ -501,22 +518,5 @@ const useAuthStore = create((set, get) => ({
     }));
   },
 }));
-
-// Helper function to parse JWT token
-function parseJwt(token) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return {};
-  }
-}
 
 export default useAuthStore;

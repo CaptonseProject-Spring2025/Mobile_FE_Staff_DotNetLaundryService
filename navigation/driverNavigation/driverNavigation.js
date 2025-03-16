@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DriverMenu from "../../screens/driverScreens/home/driverMenu.jsx";
 import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
-
+import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -65,6 +65,15 @@ export function DriverAccountScreen() {
         component={ProfileMenu}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="updateProfile"
+        component={UpdateUser}
+        options={{
+          headerTitle: "Cập nhật thông tin",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
         }}
       />
     </Stack.Navigator>
