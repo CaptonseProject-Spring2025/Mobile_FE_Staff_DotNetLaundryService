@@ -51,7 +51,6 @@ const Layout = () => {
     <NavigationContainer>
       <Stack.Navigator>
         {isAuthenticated ? (
-          // Determine which navigation to show based on user role
           userDetail?.role === "Staff" ? (
             <Stack.Screen
               name="StaffHome"
@@ -59,7 +58,6 @@ const Layout = () => {
               options={{ headerShown: false }}
             />
           ) : (
-            // Default to driver navigation for any other role
             <Stack.Screen
               name="DriverHome"
               component={DriverBottomNavigationTab}

@@ -10,6 +10,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import useAuthStore from "../../api/store/authStore";
@@ -71,16 +72,24 @@ export default function LoginScreen({ navigation }) {
     setLoginError("");
     const isPhoneValid = validatePhone();
     const isPasswordValid = validatePassword();
-  
+
     if (!isPhoneValid || !isPasswordValid) {
       return;
     }
-  
+
     const result = await login(phoneNumber, password);
-  
+
     if (!result.success) {
       // Show error message
       setLoginError("Sai số điện thoại hoặc mật khẩu");
+    }
+    // Check if user is a Customer after successful login
+    const userRole = useAuthStore.getState().userDetail?.role;
+    if (userRole === "Customer" || userRole === "Admin") {
+      // Log out immediately if user is a Customer
+      const logout = useAuthStore.getState().logout;
+      await logout();
+      Alert.alert("Bạn không có quyền đăng nhập vào ứng dụng này");
     }
   };
 
