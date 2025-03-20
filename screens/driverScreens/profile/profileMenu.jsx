@@ -68,9 +68,9 @@ export default function ProfileMenu({ navigation }) {
     {
       id: "3",
       title: "Cài đặt",
-      icon: "help-circle-outline",
+      icon: "cog-outline",
       screen: "HelpCenter",
-      requiresAuth: false,
+      requiresAuth: true,
     },
   ];
 
@@ -94,11 +94,11 @@ export default function ProfileMenu({ navigation }) {
     <ScrollView style={{ flex: 1, backgroundColor: "#FFFFFF", padding: 20 }}>
       <View
         style={{
-          flexDirection: "column", // Align avatar and user info vertically
-          alignItems: "center", // Center items horizontally
+          flexDirection: "column",
+          alignItems: "center", 
           justifyContent: "center",
           width: "100%",
-          paddingVertical: 20, // Add some vertical padding
+          paddingVertical: 20,
         }}
       >
         {/* Avatar */}
