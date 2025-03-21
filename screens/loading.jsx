@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView, StyleSheet, Animated, Image } from "react-native";
 import { Asset } from "expo-asset";
-
+import { StatusBar } from "expo-status-bar";
 export default function SplashScreenComponent() {
   const topAnim = useRef(new Animated.Value(-80)).current; // initial offset for top vector
   const bottomAnim = useRef(new Animated.Value(80)).current; // initial offset for bottom vector
@@ -60,6 +60,7 @@ export default function SplashScreenComponent() {
           },
         ]}
       />
+      <StatusBar translucent style="dark" />
     </SafeAreaView>
   );
 }
