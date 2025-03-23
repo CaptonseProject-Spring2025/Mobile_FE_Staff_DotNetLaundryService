@@ -48,7 +48,7 @@ const Layout = () => {
   }
 
   return (
-    <NavigationContainer>
+    <>
       <Stack.Navigator>
         {isAuthenticated ? (
           userDetail?.role === "Staff" ? (
@@ -75,7 +75,7 @@ const Layout = () => {
       </Stack.Navigator>
 
       <StatusBar translucent style="dark" />
-    </NavigationContainer>
+    </>
   );
 };
 
