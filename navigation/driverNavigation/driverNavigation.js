@@ -64,7 +64,9 @@ export function DriverAccountScreen() {
         name="DriverAccount"
         component={ProfileMenu}
         options={{
-          headerShown: false,
+          headerTitle: "Hồ sơ Cá nhân",
+          headerTitleAlign: "left",
+          headerStyle: { height: 100 },
         }}
       />
       <Stack.Screen

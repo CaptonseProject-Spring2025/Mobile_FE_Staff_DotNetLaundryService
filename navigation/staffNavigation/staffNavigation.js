@@ -52,7 +52,9 @@ export function StaffAccountScreen() {
         name="StaffAccount"
         component={ProfileMenu}
         options={{
-          headerShown: false,
+          headerTitle: "Hồ sơ Cá nhân",
+          headerTitleAlign: "left",
+          headerStyle: { height: 100 },
         }}
       />
       <Stack.Screen
