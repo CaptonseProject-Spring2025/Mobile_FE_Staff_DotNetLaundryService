@@ -128,28 +128,6 @@ const useUserStore = create((set, get) => ({
     }
   },
 
-  // Initialize user details from AsyncStorage on app start
-  initUserDetails: async () => {
-    try {
-      const userDetailJson = await AsyncStorage.getItem(
-        STORAGE_KEYS.USER_DETAIL
-      );
-      if (userDetailJson) {
-        const userDetail = JSON.parse(userDetailJson);
-        set({ userDetails: userDetail });
-        return userDetail;
-      }
-      return null;
-    } catch (error) {
-      console.error("Failed to initialize user details from storage", error);
-      return null;
-    }
-  },
-
-  // Get current user details
-  getUserDetails: () => {
-    return get().userDetails;
-  },
 }));
 
 export default useUserStore;
