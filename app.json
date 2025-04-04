@@ -48,6 +48,13 @@
           "photosPermission": "This app requires access to your photos to set profile pictures.",
           "cameraPermission": "This app requires camera access to take profile pictures."
         }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsVersion": "11.0.0",
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThndGMxZ2cwdXM3MnJxdHpiYzl4dHo1In0.uv1rxBJQA1KLrWW5VEe17Q"
+        }
       ]
     ]
   }

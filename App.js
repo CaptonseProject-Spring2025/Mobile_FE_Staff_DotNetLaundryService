@@ -7,8 +7,14 @@ import "react-native-gesture-handler";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
+import MapboxGL from "@rnmapbox/maps";
 
 enableScreens();
+
+const tokenAccess =
+  "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
+
+MapboxGL.setAccessToken(tokenAccess);
 
 export default function App() {
   return (
