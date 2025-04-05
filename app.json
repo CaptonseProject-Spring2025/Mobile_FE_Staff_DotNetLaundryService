@@ -24,11 +24,14 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.thanhblue.Ecolaundrydriverapp"
     },
@@ -56,6 +59,11 @@
           "RNMapboxMapsDownloadToken": "sk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThndGMxZ2cwdXM3MnJxdHpiYzl4dHo1In0.uv1rxBJQA1KLrWW5VEe17Q"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "50aa32b4-00ea-4d77-bfe2-0cac5d552168"
+      }
+    }
   }
 }
