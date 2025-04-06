@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DriverMenu from "../../screens/driverScreens/home/driverMenu.jsx";
 import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
 import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx";
-
+import StaffrMenu from "../../screens/staffScreens/home/staffMenu.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -10,8 +10,8 @@ export function StaffHomeScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="DriverMenu"
-        component={DriverMenu}
+        name="StaffMenu"
+        component={StaffrMenu}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -23,7 +23,7 @@ export function StaffStatisticScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="DriverStatistic"
+        name="StaffStatistic"
         component={DriverMenu}
         options={{ headerShown: false }}
       />

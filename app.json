@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -58,8 +58,16 @@
           "RNMapboxMapsVersion": "11.0.0",
           "RNMapboxMapsDownloadToken": "sk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThndGMxZ2cwdXM3MnJxdHpiYzl4dHo1In0.uv1rxBJQA1KLrWW5VEe17Q"
         }
-      ]
+      ],
+      ["expo-notifications"]
     ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#ffffff",
+      "androidMode": "default",
+      "androidCollapsedTitle": "EcoLaundry",
+      "iosDisplayInForeground": true
+    },
     "extra": {
       "eas": {
         "projectId": "50aa32b4-00ea-4d77-bfe2-0cac5d552168"

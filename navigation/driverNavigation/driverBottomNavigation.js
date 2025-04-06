@@ -58,13 +58,6 @@ const DriverBottomNavigationTab = () => {
         }}
       />
       <Tab.Screen
-        name="Thông báo"
-        component={DriverHomeScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tab.Screen
         name="Tài khoản"
         component={DriverAccountScreen}
         options={{

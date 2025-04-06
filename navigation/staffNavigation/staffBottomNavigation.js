@@ -12,8 +12,8 @@ const StaffBottomNavigationTab = () => {
           let iconName;
           if (route.name === "Trang chủ") {
             iconName = focused ? "home" : "home";
-          } else if (route.name === "Thông báo") {
-            iconName = focused ? "bell" : "bell";
+          } else if (route.name === "Thống kê") {
+            iconName = focused ? "checklist" : "checklist";
           } else if (route.name === "Tài khoản") {
             iconName = focused ? "person" : "person";
           }
@@ -32,7 +32,7 @@ const StaffBottomNavigationTab = () => {
         }}
       />
       <Tab.Screen
-        name="Thông báo"
+        name="Thống kê"
         component={StaffHomeScreen}
         options={{
           headerShown: false,

@@ -8,11 +8,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
 import MapboxGL from "@rnmapbox/maps";
-import { Mapboxtoken } from "@env";
+import "./global.css";
+const tokenAccess =
+  "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
+
+MapboxGL.setAccessToken(tokenAccess);
 
 enableScreens();
-
-MapboxGL.setAccessToken(Mapboxtoken);
 
 export default function App() {
   return (

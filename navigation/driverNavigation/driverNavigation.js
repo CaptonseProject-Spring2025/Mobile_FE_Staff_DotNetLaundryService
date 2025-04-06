@@ -2,6 +2,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DriverMenu from "../../screens/driverScreens/home/driverMenu.jsx";
 import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
 import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx";
+import DeliveryScreen from "../../screens/driverScreens/orders/delivery/deliveryScreen.jsx";
+import PickupScreen from "../../screens/driverScreens/orders/pickup/pickupScreen.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -12,6 +14,24 @@ export function DriverHomeScreen() {
         name="DriverMenu"
         component={DriverMenu}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="DriverPickupScreen"
+        component={PickupScreen}
+        options={{
+          headerTitle: "Đơn nhận hàng",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
+      />
+      <Stack.Screen
+        name="DriverDeliveryScreen"
+        component={DeliveryScreen}
+        options={{
+          headerTitle: "Đơn giao hàng",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
       />
     </Stack.Navigator>
   );

@@ -9,11 +9,10 @@ import {
 } from "react-native";
 import useAuthStore from "../../../api/store/authStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-export default function DriverMenu({ navigation }) {
+export default function StaffrMenu({ navigation }) {
   const { userDetail } = useAuthStore();
   const [notificationCount, setNotificationCount] = useState(5);
   return (
@@ -63,29 +62,12 @@ export default function DriverMenu({ navigation }) {
           onPress={() => navigation.navigate("DriverPickupScreen")}
         >
           <View style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}>
-            <MaterialIcons name="local-shipping" size={28} color="#fff" />
+            <Ionicons name="reader-outline" size={28} color="#fff" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Đơn nhận</Text>
+            <Text style={styles.menuTitle}>Đơn Xử lý</Text>
             <Text style={styles.menuDescription}>
-              Danh sách đơn hàng cần đi lấy từ khách hàng
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-        </TouchableOpacity>
-
-        {/* Order delivery section */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate("DriverDeliveryScreen")}
-        >
-          <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
-            <MaterialIcons name="local-shipping" size={28} color="#fff" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Đơn giao</Text>
-            <Text style={styles.menuDescription}>
-              Danh sách đơn hàng cần giao đến khách hàng
+              Danh sách đơn hàng cần xử lý
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />

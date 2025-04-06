@@ -60,13 +60,6 @@ export default function ProfileMenu({ navigation }) {
     },
     {
       id: "2",
-      title: "Đổi mật khẩu",
-      icon: "chatbubble-outline",
-      screen: "Messages",
-      requiresAuth: true,
-    },
-    {
-      id: "3",
       title: "Cài đặt",
       icon: "cog-outline",
       screen: "HelpCenter",
