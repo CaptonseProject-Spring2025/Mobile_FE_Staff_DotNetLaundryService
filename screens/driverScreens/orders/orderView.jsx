@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const OrderList = () => {
+const OrderView = () => {
     return (
         <View>
             
@@ -9,6 +9,10 @@ const OrderList = () => {
     );
 }
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+    container: {
+        
+    }
+})
 
-export default OrderList;
+export default OrderView;

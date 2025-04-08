@@ -1,14 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
   Text,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Divider } from "react-native-paper";
+import useOrderStore from "../../../../api/store/orderStore";
 const PickupList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
+  const { assignmentList, isLoadingOrderList, fetchAssignmentList } =
+    useOrderStore();
+  const [filteredOrders, setFilteredOrders] = useState([]);
+
+  useEffect(() => {
+    fetchAssignmentList();
+  }, [fetchAssignmentList]);
+
+  useEffect(() => {
+    // Filter orders with status "ASSIGNED_PICKUP"
+    if (assignmentList) {
+      setFilteredOrders(
+        assignmentList.filter((order) => order.status === "ASSIGNED_PICKUP")
+      );
+    }
+  }, [assignmentList]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -18,32 +36,14 @@ const PickupList = ({ searchQuery = "" }) => {
     }, 2000);
   };
 
-  const orders = [
-    {
-      orderId: 6834,
-      customerName: "Nguyễn Văn A",
-      pickupLocation: "123 Đường ABC, Quận 1",
-      pickupTime: "2023-10-01T10:00:00",
-      phoneNumber: "0123456789",
-      note: "Gọi trước khi đến",
-    },
-    {
-      orderId: 6835,
-      customerName: "Nguyễn Văn B",
-      pickupLocation: "456 Đường DEF, Quận 2",
-      pickupTime: "2023-10-01T11:00:00",
-      phoneNumber: "0987654321",
-      note: "Không có ghi chú",
-    },
-    {
-      orderId: 6836,
-      customerName: "Nguyễn Văn C",
-      pickupLocation: "789 Đường GHI, Quận 3",
-      pickupTime: "2023-10-01T12:00:00",
-      phoneNumber: "0123456789",
-      note: "Gọi trước khi đến",
-    },
-  ];
+  if (isLoadingOrderList) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#63B35C" />
+        <Text style={{ fontSize: 18 }}>Đang tải đơn hàng...</Text>
+      </View>
+    );
+  }
 
   const renderOrderItem = ({ item }) => {
     return (
@@ -70,7 +70,7 @@ const PickupList = ({ searchQuery = "" }) => {
                 Thời gian lấy hàng
               </Text>
               <Text style={{ fontSize: 16, color: "#555" }}>
-                {new Date(item.pickupTime).toLocaleString("vi-VN", {
+                {new Date(item.assignedAt).toLocaleString("vi-VN", {
                   year: "numeric",
                   month: "2-digit",
                   day: "2-digit",
@@ -88,7 +88,7 @@ const PickupList = ({ searchQuery = "" }) => {
                 Tên khách hàng
               </Text>
               <Text style={{ fontSize: 16, color: "#555" }}>
-                {item.customerName}
+                {item.fullname}
               </Text>
             </View>
             <View style={styles.orderInfoBlock}>
@@ -96,7 +96,7 @@ const PickupList = ({ searchQuery = "" }) => {
                 Số điện thoại
               </Text>
               <Text style={{ fontSize: 16, color: "#555" }}>
-                {item.phoneNumber}
+                {item.phonenumber}
               </Text>
             </View>
           </View>
@@ -108,35 +108,40 @@ const PickupList = ({ searchQuery = "" }) => {
                 Địa chỉ lấy hàng
               </Text>
               <Text style={{ fontSize: 16, color: "#555" }}>
-                {item.pickupLocation}
+                {item.address}
               </Text>
             </View>
             <View style={styles.orderInfoBlock}>
               <Text style={{ fontSize: 16, fontWeight: "bold" }}>Ghi chú</Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>{item.note}</Text>
+              <Text style={{ fontSize: 16, color: "#555" }}>
+                {item.note || "N/A"}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Button Xác nhận lấy hàng */}
-        <TouchableOpacity style={styles.buttonStyle} >
-          <Text style={styles.buttonTextStyle}>Xác nhận lấy hàng</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>Hủy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.confirmButton}>
+            <Text style={styles.buttonTextStyle}>Xác nhận giao hàng</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
 
   return (
-    <View style={{ flex: 1, marginHorizontal: 20, marginBottom: 20 }}>
+    <View style={{ flex: 1, marginHorizontal: 10, marginBottom: 20 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", textAlign: "center" }}>
-        Đơn cần lấy ({orders.length})
+        Đơn cần lấy ({filteredOrders?.length || 0})
       </Text>
       <FlatList
-        data={orders.filter((order) =>
-          order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-        )}
+        data={filteredOrders}
         renderItem={renderOrderItem}
-        keyExtractor={(item) => item.orderId.toString()}
+        keyExtractor={(item) => item.assignmentId.toString()}
         refreshing={refreshing}
         onRefresh={() => onRefresh()}
         showsVerticalScrollIndicator={false}
@@ -149,7 +154,7 @@ const PickupList = ({ searchQuery = "" }) => {
 
 const styles = StyleSheet.create({
   orderContainer: {
-    margin: 10,
+    margin: 5,
     padding: 20,
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -176,14 +181,25 @@ const styles = StyleSheet.create({
   orderInfoBlock: {
     flex: 1,
   },
-  buttonStyle: {
+  buttonTextStyle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
+  },
+  confirmButton: {
     backgroundColor: "#28a745",
     paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    paddingHorizontal: 10,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 10,
+    flex: 3,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -193,7 +209,25 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  buttonTextStyle: {
+  cancelButton: {
+    backgroundColor: "#dc3545",
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    flex: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cancelButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "bold",

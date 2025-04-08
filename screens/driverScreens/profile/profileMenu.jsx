@@ -33,11 +33,7 @@ export default function ProfileMenu({ navigation }) {
         onPress: async () => {
           try {
             setIsLoading(true);
-            const result = await logout();
-
-            if (!result) {
-              Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại.");
-            }
+            await logout();
           } catch (error) {
             console.error("Error during logout:", error);
             Alert.alert("Lỗi", "Đã xảy ra lỗi khi đăng xuất.");
@@ -54,15 +50,8 @@ export default function ProfileMenu({ navigation }) {
     {
       id: "1",
       title: "Thông tin cá nhân",
-      icon: "location-outline",
+      icon: "person-outline",
       screen: "updateProfile",
-      requiresAuth: true,
-    },
-    {
-      id: "2",
-      title: "Cài đặt",
-      icon: "cog-outline",
-      screen: "HelpCenter",
       requiresAuth: true,
     },
   ];
@@ -116,8 +105,8 @@ export default function ProfileMenu({ navigation }) {
         <View
           style={{
             flexDirection: "column",
-            alignItems: "center", // Center text horizontally
-            paddingTop: 15, // Space between avatar and text
+            alignItems: "center", 
+            paddingTop: 15,
           }}
         >
           <Text
@@ -132,8 +121,8 @@ export default function ProfileMenu({ navigation }) {
           </Text>
           <Text
             style={{
-              fontSize: 16, // Smaller text for company
-              color: "#000000", // Black text to match the image
+              fontSize: 16, 
+              color: "#000000", 
               marginBottom: 5,
             }}
           >
@@ -141,8 +130,8 @@ export default function ProfileMenu({ navigation }) {
           </Text>
           <Text
             style={{
-              fontSize: 16, // Same size as company
-              color: "#000000", // Black text to match the image
+              fontSize: 16, 
+              color: "#000000",
             }}
           >
             {userDetail?.phoneNumber || "0908091213"}
@@ -194,12 +183,12 @@ export default function ProfileMenu({ navigation }) {
 
 const styles = StyleSheet.create({
   editButton: {
-    position: "absolute", // Position the edit button over the avatar
+    position: "absolute", 
     bottom: 0,
     right: 0,
-    backgroundColor: "#63B35C", // Green background to match the theme
-    borderRadius: 50, // Circular shape
-    padding: 8, // Padding to make the button larger
+    backgroundColor: "#63B35C",
+    borderRadius: 50, 
+    padding: 8, 
     justifyContent: "center",
     alignItems: "center",
   },

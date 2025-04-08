@@ -22,6 +22,5 @@ const PickupScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({});
 
 export default PickupScreen;
