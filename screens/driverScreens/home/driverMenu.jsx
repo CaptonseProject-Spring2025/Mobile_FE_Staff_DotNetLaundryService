@@ -30,7 +30,7 @@ export default function DriverMenu({ navigation }) {
         >
           <View>
             <Text style={{ fontSize: 20, color: "#fff", fontWeight: "bold" }}>
-              Xin chào
+              Xin chào 
             </Text>
             <Text style={{ fontSize: 24, color: "#fff", fontWeight: "bold" }}>
               {userDetail?.fullName}

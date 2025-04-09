@@ -59,7 +59,7 @@ export default function StaffrMenu({ navigation }) {
         {/* Order pickup section */}
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate("DriverPickupScreen")}
+          onPress={() => navigation.navigate("OrderListScreen")}
         >
           <View style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}>
             <Ionicons name="reader-outline" size={28} color="#fff" />
@@ -68,6 +68,40 @@ export default function StaffrMenu({ navigation }) {
             <Text style={styles.menuTitle}>Đơn Xử lý</Text>
             <Text style={styles.menuDescription}>
               Danh sách đơn hàng cần xử lý
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+        </TouchableOpacity>
+
+        {/* Order checking section */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("OrderCheckingListScreen")}
+        >
+          <View style={[styles.iconBackground, { backgroundColor: "#FFA500" }]}>
+            <Ionicons name="checkmark-done-outline" size={28} color="#fff" />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuTitle}>Đơn Nhận Check</Text>
+            <Text style={styles.menuDescription}>
+              Danh sách đơn hàng nhận check
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+        </TouchableOpacity>
+
+         {/* Order checking section */}
+         <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("OrderListCheckedScreen")}
+        >
+          <View style={[styles.iconBackground, { backgroundColor: "#e67e22" }]}>
+            <Ionicons name="checkmark-circle-outline" size={28} color="#fff" />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuTitle}>Đơn Nhận Checked</Text>
+            <Text style={styles.menuDescription}>
+              Danh sách đơn hàng nhận checked
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />

@@ -37,7 +37,6 @@ const Layout = () => {
     }
   };
 
-
   useEffect(() => {
     // Initialize auth state with better error handling
     const initApp = async () => {
@@ -47,7 +46,6 @@ const Layout = () => {
 
         // Request permissions
         await requestLocationPermission();
-       
 
         // Initialize auth
         await initialize();

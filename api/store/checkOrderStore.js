@@ -69,6 +69,39 @@ const useCheckOrderStore = create((set) => ({
       set({ updateOrderError: error.message, isUpdatingOrder: false });
     }
   },
+
+  orderChecked: [],
+  isLoadingOrderChecked: false,
+  orderCheckedError: null,
+  fetchOrderChecked: async () => {
+    try {
+      set({ isLoadingOrderChecked: true, orderCheckedError: null });
+      const response = await axiosClient.get(`/staff/orders/checked`);
+      set({ orderChecked: response.data, isLoadingOrderChecked: false });
+    } catch (error) {
+      set({ orderCheckedError: error.message, isLoadingOrderChecked: false });
+    }
+  },
+
+
+  isLoadingReciveToWashing: false,
+  reciveToWashingError: null,
+  reciveToWashing: async (orderId) => {
+    try {
+      set({ isLoadingReciveToWashing: true, reciveToWashingError: null });
+      const response = await axiosClient.post(
+        `/staff/orders/washing?orderId=${orderId}`
+      );
+      set({ isLoadingReciveToWashing: false });
+      return response.data;
+    } catch (error) {
+      console.error("Error starting pick up:", error);
+      set({
+        reciveToWashingError: error.message,
+        isLoadingReciveToWashing: false,
+      });
+    }
+  },
 }));
 
 export default useCheckOrderStore;

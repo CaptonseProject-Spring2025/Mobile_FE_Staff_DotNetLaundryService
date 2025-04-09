@@ -9,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
 import MapboxGL from "@rnmapbox/maps";
 import "./global.css";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 const tokenAccess =
   "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
 
@@ -18,6 +19,7 @@ enableScreens();
 
 export default function App() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}> 
     <SafeAreaProvider>
       <PaperProvider>
         <NavigationContainer>
@@ -25,6 +27,7 @@ export default function App() {
         </NavigationContainer>
       </PaperProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
