@@ -9,7 +9,9 @@ import OrderDetailScreen from "../../screens/staffScreens/orders/OrderDetailScre
 import OrderListCheckedScreen from "../../screens/staffScreens/orders/OrderListCheckedScreen.jsx";
 import OrderDetailCheckedSceen from "../../screens/staffScreens/orders/OrderDetailCheckedSceen.jsx";
 import OrderWashingListSceen from "../../screens/staffScreens/orders/OrderWashingListSceen.jsx";
-import OrderDetailWashingScreen from '../../screens/staffScreens/orders/OrdeDetailWashingScreen.jsx';
+import OrderDetailWashingScreen from "../../screens/staffScreens/orders/OrdeDetailWashingScreen.jsx";
+import OrderWashedListScreen from "../../screens/staffScreens/orders/OrderWashedListScreen.jsx";
+import OrderDetailWashedScreen from '../../screens/staffScreens/orders/OrderDetailWashedScreen.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,7 +56,6 @@ export function StaffHomeScreen() {
           headerTitleAlign: "center",
         }}
       />
-
       <Stack.Screen
         name="OrderDetailCheckedSceen"
         component={OrderDetailCheckedSceen}
@@ -63,7 +64,6 @@ export function StaffHomeScreen() {
           headerTitleAlign: "center",
         }}
       />
-
       <Stack.Screen
         name="OrderWashingListSceen"
         component={OrderWashingListSceen}
@@ -72,13 +72,27 @@ export function StaffHomeScreen() {
           headerTitleAlign: "center",
         }}
       />
-
-
-<Stack.Screen
+      <Stack.Screen
         name="OrderDetailWashingScreen"
         component={OrderDetailWashingScreen}
         options={{
+          headerTitle: "Chi tiết đơn hàng đang giặt",
+          headerTitleAlign: "center",
+        }}
+      />
+      <Stack.Screen
+        name="OrderWashedListScreen"
+        component={OrderWashedListScreen}
+        options={{
           headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+       <Stack.Screen
+        name="OrderDetailWashedScreen"
+        component={OrderDetailWashedScreen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng đang giặt",
           headerTitleAlign: "center",
         }}
       />

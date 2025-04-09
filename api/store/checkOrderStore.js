@@ -119,6 +119,20 @@ const useCheckOrderStore = create((set) => ({
     }
   },
 
+
+  orderWashed: [],
+  isLoadingOrderWashed: false,
+  orderWashedError: null,
+  fetchOrderWashing: async () => {
+    try {
+      set({ isLoadingOrderWashed: true, orderWashedError: null });
+      const response = await axiosClient.get(`/staff/orders/washed`);
+      set({ orderWashed: response.data, isLoadingOrderWashed: false });
+    } catch (error) {
+      set({ orderWashedError: error.message, isLoadingOrderWashed: false });
+    }
+  },
+
 }));
 
 export default useCheckOrderStore;
