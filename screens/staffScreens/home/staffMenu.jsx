@@ -90,8 +90,8 @@ export default function StaffrMenu({ navigation }) {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-         {/* Order checking section */}
-         <TouchableOpacity
+        {/* Order checked section */}
+        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("OrderListCheckedScreen")}
         >
@@ -102,6 +102,23 @@ export default function StaffrMenu({ navigation }) {
             <Text style={styles.menuTitle}>Đơn Nhận Checked</Text>
             <Text style={styles.menuDescription}>
               Danh sách đơn hàng nhận checked
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+        </TouchableOpacity>
+
+        {/* Order checking section */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("OrderWashingListSceen")}
+        >
+          <View style={[styles.iconBackground, { backgroundColor: "#2980b9" }]}>
+            <Ionicons name="shirt-outline" size={28} color="#fff" />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuTitle}>Đơn nhận đang được giặt</Text>
+            <Text style={styles.menuDescription}>
+              Danh sách đơn hàng nhận đang được giặt
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />

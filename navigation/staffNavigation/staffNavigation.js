@@ -7,7 +7,8 @@ import OrderCheckingListScreen from "../../screens/staffScreens/orders/OrderChec
 import OrderListScreen from "../../screens/staffScreens/orders/OrderListScreen.jsx";
 import OrderDetailScreen from "../../screens/staffScreens/orders/OrderDetailScreen.jsx";
 import OrderListCheckedScreen from "../../screens/staffScreens/orders/OrderListCheckedScreen.jsx";
-import OrderDetailCheckedSceen from '../../screens/staffScreens/orders/OrderDetailCheckedSceen.jsx';
+import OrderDetailCheckedSceen from "../../screens/staffScreens/orders/OrderDetailCheckedSceen.jsx";
+import OrderWashingListSceen from "../../screens/staffScreens/orders/OrderWashingListSceen.jsx";
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,15 @@ export function StaffHomeScreen() {
       <Stack.Screen
         name="OrderDetailCheckedSceen"
         component={OrderDetailCheckedSceen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+
+      <Stack.Screen
+        name="OrderWashingListSceen"
+        component={OrderWashingListSceen}
         options={{
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",
