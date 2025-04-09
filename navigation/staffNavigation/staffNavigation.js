@@ -3,6 +3,14 @@ import DriverMenu from "../../screens/driverScreens/home/driverMenu.jsx";
 import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
 import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx";
 import StaffrMenu from "../../screens/staffScreens/home/staffMenu.jsx";
+import OrderCheckingListScreen from "../../screens/staffScreens/orders/OrderCheckingListScreen.jsx";
+import OrderListScreen from "../../screens/staffScreens/orders/OrderListScreen.jsx";
+import OrderDetailScreen from "../../screens/staffScreens/orders/OrderDetailScreen.jsx";
+import OrderListCheckedScreen from "../../screens/staffScreens/orders/OrderListCheckedScreen.jsx";
+import OrderDetailCheckedSceen from "../../screens/staffScreens/orders/OrderDetailCheckedSceen.jsx";
+import OrderWashingListSceen from "../../screens/staffScreens/orders/OrderWashingListSceen.jsx";
+import OrderDetailWashingScreen from '../../screens/staffScreens/orders/OrdeDetailWashingScreen.jsx';
+
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -13,6 +21,66 @@ export function StaffHomeScreen() {
         name="StaffMenu"
         component={StaffrMenu}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrderListScreen" // Sửa lại tên màn hình cho đúng
+        component={OrderListScreen}
+        options={{
+          headerTitle: "Danh sách đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+      <Stack.Screen
+        name="OrderCheckingListScreen"
+        component={OrderCheckingListScreen}
+        options={{
+          headerTitle: "Danh sách đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+      <Stack.Screen
+        name="OrderDetailScreen"
+        component={OrderDetailScreen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+      <Stack.Screen
+        name="OrderListCheckedScreen"
+        component={OrderListCheckedScreen}
+        options={{
+          headerTitle: "Danh sách đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+
+      <Stack.Screen
+        name="OrderDetailCheckedSceen"
+        component={OrderDetailCheckedSceen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+
+      <Stack.Screen
+        name="OrderWashingListSceen"
+        component={OrderWashingListSceen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
+      />
+
+
+<Stack.Screen
+        name="OrderDetailWashingScreen"
+        component={OrderDetailWashingScreen}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+        }}
       />
     </Stack.Navigator>
   );
