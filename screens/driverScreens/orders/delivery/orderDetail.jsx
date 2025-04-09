@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { Divider, Avatar } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
@@ -104,6 +104,7 @@ const OrderDetail = ({ navigation, route }) => {
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
   const { assignmentId } = route.params;
   const {
     fetchOrderDetail,
@@ -117,7 +118,17 @@ const OrderDetail = ({ navigation, route }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (assignmentId) {
-        await fetchAssignmentDetail(assignmentId);
+        try {
+          setDataLoaded(false);
+          await fetchAssignmentDetail(assignmentId);
+        } catch (error) {
+          console.error("Error fetching assignment details:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải thông tin đơn hàng",
+          });
+        }
       }
     };
     fetchData();
@@ -125,25 +136,42 @@ const OrderDetail = ({ navigation, route }) => {
 
   useEffect(() => {
     const fetchOrderData = async () => {
-      if (assignmentDetail.orderId) {
-        await fetchOrderDetail(assignmentDetail.orderId);
+      if (assignmentDetail && assignmentDetail.orderId) {
+        try {
+          await fetchOrderDetail(assignmentDetail.orderId);
+          setDataLoaded(true);
+        } catch (error) {
+          console.error("Error fetching order details:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải chi tiết đơn hàng",
+          });
+          setDataLoaded(true);
+        }
       }
     };
     fetchOrderData();
-  }, [assignmentId.orderId]);
+  }, [assignmentDetail]);
 
-
-   if (isLoadingOrderDetail || isLoadingAssignmentDetail) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#63B35C" />
-          <Text style={styles.loadingText}>Đang tải...</Text>
-        </View>
-      );
-    }
+  console.log("Order Detail:", orderDetail);
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Loading overlay  */}
+      {(isLoadingOrderDetail || isLoadingAssignmentDetail) && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#02A257" />
+          <Text style={styles.loadingText}>
+            {isLoadingAssignmentDetail
+              ? "Đang tải thông tin đơn hàng..."
+              : isLoadingOrderDetail
+              ? "Đang tải chi tiết đơn hàng..."
+              : "Đang tải dữ liệu..."}
+          </Text>
+        </View>
+      )}
+
       {/* Cancel Reason Modal */}
       <Modal
         animationType="slide"
@@ -305,8 +333,14 @@ const OrderDetail = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Địa chỉ nhận hàng</Text>
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate("AddressNavigateMap", {
-                  userData: orderDetail,
+                navigation.navigate("AddressDeliveryNavigateMap", {
+                  userData: {
+                    deliveryLongitude: orderDetail.deliveryLongitude,
+                    deliveryLatitude: orderDetail.deliveryLatitude,
+                    deliveryName: orderDetail.deliveryName,
+                    deliveryPhone: orderDetail.deliveryPhone,
+                    deliveryAddressDetail: orderDetail.deliveryAddressDetail
+                  },
                   showTravelingArrow: true,
                 })
               }
@@ -324,24 +358,25 @@ const OrderDetail = ({ navigation, route }) => {
               logoEnabled={false}
               scaleBarEnabled={false}
             >
-              {orderDetail?.deliveryLatitude && orderDetail?.deliveryLongitude && (
-                <>
-                  <MapboxGL.Camera
-                    zoomLevel={15}
-                    centerCoordinate={[
-                      orderDetail.deliveryLongitude,
-                      orderDetail.deliveryLatitude,
-                    ]}
-                  />
-                  <MapboxGL.PointAnnotation
-                    id="pickupLocation"
-                    coordinate={[
-                      orderDetail.deliveryLongitude,
-                      orderDetail.deliveryLatitude,
-                    ]}
-                  />
-                </>
-              )}
+              {orderDetail?.deliveryLatitude &&
+                orderDetail?.deliveryLongitude && (
+                  <>
+                    <MapboxGL.Camera
+                      zoomLevel={15}
+                      centerCoordinate={[
+                        orderDetail.deliveryLongitude,
+                        orderDetail.deliveryLatitude,
+                      ]}
+                    />
+                    <MapboxGL.PointAnnotation
+                      id="pickupLocation"
+                      coordinate={[
+                        orderDetail.deliveryLongitude,
+                        orderDetail.deliveryLatitude,
+                      ]}
+                    />
+                  </>
+                )}
             </MapboxGL.MapView>
             <View
               style={{
@@ -443,6 +478,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingTop: 20,
+  },
+  loadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#02A257",
+    fontWeight: "500",
   },
   sectionDivider: {
     height: 10,

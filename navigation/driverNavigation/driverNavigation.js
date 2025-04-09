@@ -5,8 +5,9 @@ import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx"
 import DeliveryScreen from "../../screens/driverScreens/orders/delivery/deliveryScreen.jsx";
 import PickupScreen from "../../screens/driverScreens/orders/pickup/pickupScreen.jsx";
 import OrderDetail from "../../screens/driverScreens/orders//delivery/orderDetail.jsx";
-import AddressNavigateMap from "../../screens/driverScreens/orders/addressNavigateMap.jsx";
+import AddressNavigateMap from "../../screens/driverScreens/orders/pickup/addressNavigateMap.jsx";
 import OrderPickupDetail from "../../screens/driverScreens/orders/pickup/orderPickupDetail.jsx";
+import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/delivery/addressDeliveryNavigation.jsx";
 
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +50,15 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="AddressNavigateMap"
         component={AddressNavigateMap}
+        options={{
+          headerTitle: "Bản đồ",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
+      />
+      <Stack.Screen
+        name="AddressDeliveryNavigateMap"
+        component={AddressDeliveryNavigateMap}
         options={{
           headerTitle: "Bản đồ",
           headerTitleAlign: "center",

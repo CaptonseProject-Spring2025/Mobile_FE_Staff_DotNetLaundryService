@@ -47,7 +47,7 @@ export default function UpdateUser({ route, navigation }) {
       } else if (userDetail.gender === "Female") {
         setGender("Nữ");
       } else {
-        // If the gender is already in Vietnamese, use it directly
+        
         setGender(userDetail.gender);
       }
     }

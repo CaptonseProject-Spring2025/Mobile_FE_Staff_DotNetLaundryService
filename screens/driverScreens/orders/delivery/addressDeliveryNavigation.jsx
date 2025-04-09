@@ -17,7 +17,7 @@ import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Avatar, Card } from "react-native-paper";
 import * as Location from "expo-location";
-import {  useRoute } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -25,7 +25,7 @@ LogBox.ignoreLogs([
   "ColorPropType will be removed",
 ]);
 
-const AddressNavigateMap = () => {
+const AddressDeliveryNavigateMap = () => {
   const route = useRoute();
   const { userData } = route.params || {};
 
@@ -71,10 +71,14 @@ const AddressNavigateMap = () => {
           });
 
           // Set user location from data passed in route params
-          if (userData && userData.pickupLatitude && userData.pickupLongitude) {
+          if (
+            userData &&
+            userData.deliveryLatitude &&
+            userData.deliveryLongitude
+          ) {
             setUserLocation({
-              latitude: userData.pickupLatitude,
-              longitude: userData.pickupLongitude,
+              latitude: userData.deliveryLatitude,
+              longitude: userData.deliveryLongitude,
             });
           }
         } catch (error) {
@@ -253,18 +257,18 @@ const AddressNavigateMap = () => {
 
   const handleLocationUpdate = (location) => {
     if (!location || !location.coords) return;
-    
+
     const newLocation = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
     };
-    
+
     // Update all location states with the same value
     setCurrentDriverLocation(newLocation);
     setDriverLocation(newLocation);
     setCurrentLocation(newLocation);
     // Trigger line update
-    setLineUpdateKey(prev => prev + 1);
+    setLineUpdateKey((prev) => prev + 1);
   };
 
   if (permissionStatus === "denied") {
@@ -293,8 +297,9 @@ const AddressNavigateMap = () => {
             compassEnabled={false}
             zoomEnabled={true}
             scrollEnabled={true}
-            rotateEnabled={true}
+            rotateEnabled={isDrivingView}
             pitchEnabled={isDrivingView}
+            pitch={isDrivingView ? 60 : 0}
             logoEnabled={false}
             attributionEnabled={false}
             scaleBarEnabled={false}
@@ -308,6 +313,7 @@ const AddressNavigateMap = () => {
                   : MapboxGL.UserTrackingModes.None
               }
               followPitch={isDrivingView ? 60 : 0}
+              pitch={isDrivingView ? 60 : 0}
               zoomLevel={isDrivingView ? 17 : 12}
               animationMode="flyTo"
               animationDuration={2000}
@@ -406,10 +412,13 @@ const AddressNavigateMap = () => {
                 <View style={styles.arrivalDetails}>
                   <Text style={styles.arrivalTitle}>Thời gian đến dự kiến</Text>
                   <Text style={styles.arrivalTime}>
-                    {new Date(Date.now() + duration * 60000).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {new Date(Date.now() + duration * 60000).toLocaleTimeString(
+                      [],
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -437,13 +446,13 @@ const AddressNavigateMap = () => {
                   />
                   <View style={styles.userTextInfo}>
                     <Text style={styles.userName}>
-                      {userData?.pickupName || "Customer"}
+                      {userData?.deliveryName || "Customer"}
                     </Text>
                     <Text style={styles.userPhone}>
-                      {userData?.pickupPhone || "N/A"}
+                      {userData?.deliveryPhone || "N/A"}
                     </Text>
                     <Text style={styles.userAddress} numberOfLines={2}>
-                      {userData?.pickupAddressDetail || "No address details"}
+                      {userData?.deliveryAddressDetail || "No address details"}
                     </Text>
                   </View>
                 </View>
@@ -747,4 +756,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddressNavigateMap;
+export default AddressDeliveryNavigateMap;

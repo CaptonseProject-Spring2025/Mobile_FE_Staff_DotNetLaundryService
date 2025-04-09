@@ -104,54 +104,24 @@ export default function DriverMenu({ navigation }) {
           </View>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
+
+         {/* Order pickuping/ delivering section */}
+         <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("DriverDeliveryScreen")}
+        >
+          <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
+            <Ionicons name="list-outline" size={28} color="#fff" />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuTitle}>Đơn đang thực hiện</Text>
+            <Text style={styles.menuDescription}>
+              Danh sách đơn hàng đang thực hiện
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+        </TouchableOpacity>
       </View>
-
-      {/* Order flow view at the bottom */}
-      <TouchableOpacity
-        style={styles.Flowcontainer}
-        onPress={() => navigation.navigate("DriverOrderDetailScreen")}
-      >
-        <View style={{ flexDirection: "column", gap: 4 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={{ fontWeight: "bold", fontSize: 13 }}>
-              Đơn hàng : {data[0].id}
-            </Text>
-            <Text style={{ fontWeight: "bold", fontSize: 13 }}>
-              {" "}
-              {new Date(data[0].time).toLocaleString("vi-VN", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Text>
-          </View>
-
-          <View>
-            <Text style={{ fontSize: 12, color: "black" }}>
-              Khách hàng: {data[0].customer.name} - {data[0].customer.phone}
-            </Text>
-            <Text style={{ fontSize: 12, color: "black" }}>
-              Địa chỉ: {data[0].customer.address}
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{ fontSize: 13, color: "#63B35C", fontWeight: "bold" }}
-            >
-              {data[0].status}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }

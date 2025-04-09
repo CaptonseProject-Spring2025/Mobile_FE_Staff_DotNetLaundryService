@@ -20,6 +20,7 @@ import Toast from "react-native-toast-message";
 const OrderPickupDetail = ({ navigation, route }) => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
   const { assignmentId } = route.params;
   const {
     cancelPickUp,
@@ -36,7 +37,17 @@ const OrderPickupDetail = ({ navigation, route }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (assignmentId) {
-        await fetchAssignmentDetail(assignmentId);
+        try {
+          setDataLoaded(false);
+          await fetchAssignmentDetail(assignmentId);
+        } catch (error) {
+          console.error("Error fetching assignment details:", error);
+          Toast.show({
+            type: 'error',
+            text1: 'Lỗi',
+            text2: 'Không thể tải thông tin đơn hàng',
+          });
+        }
       }
     };
     fetchData();
@@ -44,24 +55,40 @@ const OrderPickupDetail = ({ navigation, route }) => {
 
   useEffect(() => {
     const fetchOrderData = async () => {
-      if (assignmentDetail.orderId) {
-        await fetchOrderDetail(assignmentDetail.orderId);
+      if (assignmentDetail && assignmentDetail.orderId) {
+        try {
+          await fetchOrderDetail(assignmentDetail.orderId);
+          setDataLoaded(true);
+        } catch (error) {
+          console.error("Error fetching order details:", error);
+          Toast.show({
+            type: 'error',
+            text1: 'Lỗi',
+            text2: 'Không thể tải chi tiết đơn hàng',
+          });
+          setDataLoaded(true);
+        }
       }
     };
     fetchOrderData();
-  }, [assignmentId.orderId]);
-
-  if (isLoadingOrderDetail || isLoadingAssignmentDetail) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#63B35C" />
-        <Text style={styles.loadingText}>Đang tải...</Text>
-      </View>
-    );
-  }
+  }, [assignmentDetail]);
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Loading overlay  */}
+      {(isLoadingOrderDetail || isLoadingAssignmentDetail) && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#02A257" />
+          <Text style={styles.loadingText}>
+            {isLoadingAssignmentDetail 
+              ? "Đang tải thông tin đơn hàng..." 
+              : isLoadingOrderDetail 
+                ? "Đang tải chi tiết đơn hàng..." 
+                : "Đang tải dữ liệu..."}
+          </Text>
+        </View>
+      )}
+
       {/* Cancel Reason Modal */}
       <Modal
         animationType="slide"
@@ -99,8 +126,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
                 onPress={() => {
                   console.log("Order canceled with reason:", cancelReason);
                   setCancelModalVisible(false);
-                  // Here you would call your API to cancel the order
-                  // and then potentially navigate back or show confirmation
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -224,7 +249,13 @@ const OrderPickupDetail = ({ navigation, route }) => {
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("AddressNavigateMap", {
-                  userData: assignmentDetail,
+                  userData: {
+                    pickupLongitude: orderDetail.pickupLongitude,
+                    pickupLatitude: orderDetail.pickupLatitude,
+                    pickupName: orderDetail.pickupName,
+                    pickupPhone: orderDetail.pickupPhone,
+                    pickupAddressDetail: orderDetail.pickupAddressDetail
+                  },
                   showTravelingArrow: true,
                 })
               }
@@ -546,16 +577,6 @@ const styles = StyleSheet.create({
   buttonConfirmText: {
     color: "#fff",
     fontWeight: "600",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#02A257",
   },
 });
 
