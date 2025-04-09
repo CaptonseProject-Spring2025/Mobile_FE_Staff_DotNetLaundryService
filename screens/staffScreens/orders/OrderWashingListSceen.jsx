@@ -15,8 +15,25 @@ function OrderWashingListSceen({ navigation }) {
     fetchOrderWashing();
   }, []);
 
+    useEffect(() => {
+      const unsubscribe = navigation.addListener("focus", () => {
+        fetchOrderWashing(); // Gọi lại API khi màn hình được focus
+      });
+    
+      return unsubscribe; // Hủy đăng ký sự kiện khi component bị unmount
+    }, [navigation]);
+  
+
   const renderOrderItem = ({ item }) => (
-    <TouchableOpacity className="bg-gray-100 p-4 rounded-lg mb-4 shadow">
+    <TouchableOpacity 
+      className="bg-gray-100 p-4 rounded-lg mb-4 shadow"
+      onPress={() =>
+        navigation.navigate("OrderDetailWashingScreen", {
+          orderId: item.orderId,
+          orderDetail: item,
+        })
+      }  
+    >
       <Text className="text-lg font-bold text-blue-600">
         Mã đơn: {item.orderId}
       </Text>
