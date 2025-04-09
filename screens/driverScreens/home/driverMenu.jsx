@@ -16,8 +16,22 @@ const { width, height } = Dimensions.get("window");
 export default function DriverMenu({ navigation }) {
   const { userDetail } = useAuthStore();
   const [notificationCount, setNotificationCount] = useState(5);
+
+  const data = [
+    {
+      id: "24234DADD",
+      time: "2023-10-12 12:00",
+      customer: {
+        name: "Nguyễn Văn A",
+        phone: "0123456789",
+        address: "123 Đường ABC, Quận 1, TP.HCM",
+      },
+      status: "Đang giao",
+    },
+  ];
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffff" }}>
       {/* Header with greeting and notification icon */}
       <View style={styles.header}>
         <View
@@ -91,6 +105,53 @@ export default function DriverMenu({ navigation }) {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
       </View>
+
+      {/* Order flow view at the bottom */}
+      <TouchableOpacity
+        style={styles.Flowcontainer}
+        onPress={() => navigation.navigate("DriverOrderDetailScreen")}
+      >
+        <View style={{ flexDirection: "column", gap: 4 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={{ fontWeight: "bold", fontSize: 13 }}>
+              Đơn hàng : {data[0].id}
+            </Text>
+            <Text style={{ fontWeight: "bold", fontSize: 13 }}>
+              {" "}
+              {new Date(data[0].time).toLocaleString("vi-VN", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ fontSize: 12, color: "black" }}>
+              Khách hàng: {data[0].customer.name} - {data[0].customer.phone}
+            </Text>
+            <Text style={{ fontSize: 12, color: "black" }}>
+              Địa chỉ: {data[0].customer.address}
+            </Text>
+          </View>
+
+          <View>
+            <Text
+              style={{ fontSize: 13, color: "#63B35C", fontWeight: "bold" }}
+            >
+              {data[0].status}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -169,5 +230,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     marginTop: 4,
+  },
+  Flowcontainer: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
+    marginHorizontal: 20,
+    width: width * 0.9,
+    height: height * 0.13,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.32,
+    shadowRadius: 5.46,
+    elevation: 9,
+    backgroundColor: "white",
+    padding: 10,
   },
 });

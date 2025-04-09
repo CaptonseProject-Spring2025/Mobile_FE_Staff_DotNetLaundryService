@@ -4,8 +4,8 @@ import ProfileMenu from "../../screens/driverScreens/profile/profileMenu.jsx";
 import UpdateUser from "../../screens/staffScreens/profile/updateUserScreen.jsx";
 import DeliveryScreen from "../../screens/driverScreens/orders/delivery/deliveryScreen.jsx";
 import PickupScreen from "../../screens/driverScreens/orders/pickup/pickupScreen.jsx";
-
-
+import OrderDetail from "../../screens/driverScreens/orders/orderDetail.jsx";
+import AddressNavigateMap from "../../screens/driverScreens/orders/addressNavigateMap.jsx";
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +32,24 @@ export function DriverHomeScreen() {
         component={DeliveryScreen}
         options={{
           headerTitle: "Đơn giao hàng",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
+      />
+      <Stack.Screen
+        name="DriverOrderDetailScreen"
+        component={OrderDetail}
+        options={{
+          headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
+      />
+      <Stack.Screen
+        name="AddressNavigateMap"
+        component={AddressNavigateMap}
+        options={{
+          headerTitle: "Bản đồ",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
         }}
