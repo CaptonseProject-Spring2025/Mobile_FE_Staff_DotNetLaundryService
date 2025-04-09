@@ -12,12 +12,12 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import MapboxGL from "@rnmapbox/maps";
+import MapboxGL, { NativeUserLocation } from "@rnmapbox/maps";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Avatar, Card } from "react-native-paper";
 import * as Location from "expo-location";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {  useRoute } from "@react-navigation/native";
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -26,7 +26,6 @@ LogBox.ignoreLogs([
 ]);
 
 const AddressNavigateMap = () => {
-  const navigation = useNavigation();
   const route = useRoute();
   const { userData } = route.params || {};
 
@@ -45,6 +44,10 @@ const AddressNavigateMap = () => {
   const [permissionStatus, setPermissionStatus] = useState(null);
   const [showTravelingArrow, setShowTravelingArrow] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
+  const [lineUpdateKey, setLineUpdateKey] = useState(0);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [currentLocation, setCurrentLocation] = useState(null);
 
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
@@ -86,7 +89,54 @@ const AddressNavigateMap = () => {
     })();
   }, [userData]);
 
-  // Get route when both locations are available
+  // Create a location tracking effect that updates more frequently
+  useEffect(() => {
+    let locationSubscription;
+
+    if (permissionStatus === "granted") {
+      locationSubscription = Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Highest,
+          timeInterval: 1000,
+          distanceInterval: 10,
+        },
+        (location) => {
+          const newLocation = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+          setCurrentDriverLocation(newLocation);
+          setDriverLocation(newLocation); // Update driver location to trigger route recalculation
+          // Force update of direct line by incrementing key
+          setLineUpdateKey((prev) => prev + 1);
+        }
+      );
+    }
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.then((sub) => sub.remove());
+      }
+    };
+  }, [permissionStatus]);
+
+  // Force regular updates of the direct line
+  useEffect(() => {
+    const updateInterval = setInterval(() => {
+      setForceUpdate((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(updateInterval);
+  }, []);
+
+  // Update the direct line when forceUpdate changes
+  useEffect(() => {
+    if (currentDriverLocation && userLocation) {
+      setLineUpdateKey((prev) => prev + 1);
+    }
+  }, [forceUpdate, currentDriverLocation, userLocation]);
+
+  // Get route when either location changes
   useEffect(() => {
     if (driverLocation && userLocation) {
       fetchRoute();
@@ -201,6 +251,22 @@ const AddressNavigateMap = () => {
     }
   }, [driverLocation, userLocation]);
 
+  const handleLocationUpdate = (location) => {
+    if (!location || !location.coords) return;
+    
+    const newLocation = {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    };
+    
+    // Update all location states with the same value
+    setCurrentDriverLocation(newLocation);
+    setDriverLocation(newLocation);
+    setCurrentLocation(newLocation);
+    // Trigger line update
+    setLineUpdateKey(prev => prev + 1);
+  };
+
   if (permissionStatus === "denied") {
     return (
       <SafeAreaView style={styles.container}>
@@ -250,6 +316,7 @@ const AddressNavigateMap = () => {
             <MapboxGL.UserLocation
               visible={true}
               showsUserHeadingIndicator={isDrivingView}
+              onUpdate={handleLocationUpdate}
             />
 
             {!isDrivingView && driverLocation && (
@@ -290,6 +357,7 @@ const AddressNavigateMap = () => {
               </MapboxGL.ShapeSource>
             )}
 
+            {/* Use LiveLine to create constantly updating line */}
             {showTravelingArrow && routeCoordinates.length > 0 && (
               <MapboxGL.ShapeSource
                 id="arrowSource"
@@ -338,13 +406,10 @@ const AddressNavigateMap = () => {
                 <View style={styles.arrivalDetails}>
                   <Text style={styles.arrivalTitle}>Thời gian đến dự kiến</Text>
                   <Text style={styles.arrivalTime}>
-                    {new Date(Date.now() + duration * 60000).toLocaleTimeString(
-                      [],
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
+                    {new Date(Date.now() + duration * 60000).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -579,7 +644,6 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   navigationPanel: {
-    position: "absolute",
     width: "100%",
     backgroundColor: "white",
     padding: 10,

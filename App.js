@@ -8,6 +8,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
 import MapboxGL from "@rnmapbox/maps";
+import Toast from "react-native-toast-message";
 import "./global.css";
 const tokenAccess =
   "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -24,6 +25,7 @@ export default function App() {
           <Layout />
         </NavigationContainer>
       </PaperProvider>
+      <Toast />
     </SafeAreaProvider>
   );
 }

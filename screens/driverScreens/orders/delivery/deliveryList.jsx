@@ -9,11 +9,15 @@ import {
 } from "react-native";
 import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
+import { useNavigation } from "@react-navigation/native";
+
+
 const DeliveryList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
   const { assignmentList, isLoadingOrderList, fetchAssignmentList } =
     useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchAssignmentList();
@@ -124,7 +128,13 @@ const DeliveryList = ({ searchQuery = "" }) => {
           <TouchableOpacity style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>Hủy</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmButton}>
+          <TouchableOpacity style={styles.confirmButton}
+          onPress={() =>
+            navigation.navigate("DriverDeliveryOrderDetailScreen", {
+              assignmentId: item.assignmentId,
+            })
+          }
+          >
             <Text style={styles.buttonTextStyle}>Xác nhận giao hàng</Text>
           </TouchableOpacity>
         </View>
@@ -153,7 +163,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
 
 const styles = StyleSheet.create({
   orderContainer: {
-    margin: 10,
+    margin: 5,
     padding: 20,
     backgroundColor: "#fff",
     borderRadius: 10,

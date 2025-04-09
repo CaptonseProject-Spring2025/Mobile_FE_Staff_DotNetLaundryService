@@ -16,6 +16,27 @@ const useOrderStore = create((set) => ({
     }
   },
 
+  assignmentDetail: [],
+  isLoadingAssignmentDetail: false,
+  assignmentDetailError: null,
+  fetchAssignmentDetail: async (assignmentId) => {
+    try {
+      set({ isLoadingAssignmentDetail: true, assignmentDetailError: null });
+      const response = await axiosClient.get(
+        `/driver/assignments/${assignmentId}`
+      );
+      set({
+        assignmentDetail: response.data,
+        isLoadingAssignmentDetail: false,
+      });
+    } catch (error) {
+      set({
+        assignmentDetailError: error.message,
+        isLoadingAssignmentDetail: false,
+      });
+    }
+  },
+
   orderDetail: [],
   isLoadingOrderDetail: false,
   orderDetailError: null,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -10,9 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  ActivityIndicator
 } from "react-native";
 import { Divider, Avatar } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
+import useOrderStore from "../../../../api/store/orderStore";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -98,42 +100,47 @@ const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   );
 });
 
-const OrderDetail = ({ navigation }) => {
+const OrderDetail = ({ navigation, route }) => {
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const orderDetail = {
-    orderId: "123-456-789",
-    orderSummary: {
-      items: [
-        {
-          quantity: 2,
-          serviceName: "Service 1",
-          servicePrice: 100000,
-          extras: [
-            { extraName: "Extra 1", extraPrice: 50000 },
-            { extraName: "Extra 2", extraPrice: 30000 },
-          ],
-          subTotal: 260000,
-        },
-        {
-          quantity: 1,
-          serviceName: "Service 2",
-          servicePrice: 200000,
-          subTotal: 200000,
-        },
-      ],
-      estimatedTotal: 460000,
-      shippingFee: 30000,
-      applicableFee: 20000,
-      totalPrice: 510000,
-    },
-    pickupLatitude: 10.762622,
-    pickupLongitude: 106.660172,
-    pickupName: "John Doe",
-    pickupPhone: "0123456789",
-    pickupAddressDetail: "123 Main St, District 1, Ho Chi Minh City",
-  };
+  const { assignmentId } = route.params;
+  const {
+    fetchOrderDetail,
+    isLoadingOrderDetail,
+    orderDetail,
+    fetchAssignmentDetail,
+    assignmentDetail,
+    isLoadingAssignmentDetail,
+  } = useOrderStore();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (assignmentId) {
+        await fetchAssignmentDetail(assignmentId);
+      }
+    };
+    fetchData();
+  }, [assignmentId]);
+
+  useEffect(() => {
+    const fetchOrderData = async () => {
+      if (assignmentDetail.orderId) {
+        await fetchOrderDetail(assignmentDetail.orderId);
+      }
+    };
+    fetchOrderData();
+  }, [assignmentId.orderId]);
+
+
+   if (isLoadingOrderDetail || isLoadingAssignmentDetail) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#63B35C" />
+          <Text style={styles.loadingText}>Đang tải...</Text>
+        </View>
+      );
+    }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -184,7 +191,7 @@ const OrderDetail = ({ navigation }) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-      
+
       <ScrollView
         style={{ marginBottom: 20 }}
         showsVerticalScrollIndicator={false}
@@ -297,10 +304,12 @@ const OrderDetail = ({ navigation }) => {
           >
             <Text style={styles.sectionTitle}>Địa chỉ nhận hàng</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate("AddressNavigateMap", { 
-                userData: orderDetail,
-                showTravelingArrow: true 
-              })}
+              onPress={() =>
+                navigation.navigate("AddressNavigateMap", {
+                  userData: orderDetail,
+                  showTravelingArrow: true,
+                })
+              }
             >
               <Text style={{ color: "#63B35C" }}>Chỉ đường</Text>
             </TouchableOpacity>
@@ -315,20 +324,20 @@ const OrderDetail = ({ navigation }) => {
               logoEnabled={false}
               scaleBarEnabled={false}
             >
-              {orderDetail?.pickupLatitude && orderDetail?.pickupLongitude && (
+              {orderDetail?.deliveryLatitude && orderDetail?.deliveryLongitude && (
                 <>
                   <MapboxGL.Camera
                     zoomLevel={15}
                     centerCoordinate={[
-                      orderDetail.pickupLongitude,
-                      orderDetail.pickupLatitude,
+                      orderDetail.deliveryLongitude,
+                      orderDetail.deliveryLatitude,
                     ]}
                   />
                   <MapboxGL.PointAnnotation
                     id="pickupLocation"
                     coordinate={[
-                      orderDetail.pickupLongitude,
-                      orderDetail.pickupLatitude,
+                      orderDetail.deliveryLongitude,
+                      orderDetail.deliveryLatitude,
                     ]}
                   />
                 </>
@@ -367,7 +376,23 @@ const OrderDetail = ({ navigation }) => {
             </View>
           </View>
         </View>
-
+        <View style={styles.sectionDivider} />
+        {/* Notes Section */}
+        <View style={[styles.section, { paddingHorizontal: 20 }]}>
+          <Text style={styles.sectionTitle}>Ghi chú</Text>
+          <View style={{ marginTop: 10 }}>
+            <TextInput
+              mode="flat"
+              style={{ backgroundColor: "white" }}
+              theme={{ colors: { primary: "gray" } }}
+              multiline={true}
+              numberOfLines={5}
+              dense={true}
+              value={assignmentDetail?.note || "N/A"}
+              editable={false}
+            />
+          </View>
+        </View>
         <View style={styles.sectionDivider} />
         {/* Payment method section */}
         <View>

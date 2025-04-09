@@ -6,13 +6,27 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
+import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
+
 const PickupList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const { assignmentList, isLoadingOrderList, fetchAssignmentList } =
-    useOrderStore();
+  const navigation = useNavigation();
+  const {
+    assignmentList,
+    isLoadingOrderList,
+    fetchAssignmentList,
+    startPickUp,
+    isLoadingPickUp,
+    pickUpError,
+    cancelPickUpError,
+    isLoadingCancelPickUp,
+    cancelPickUp,
+  } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
 
   useEffect(() => {
@@ -36,6 +50,10 @@ const PickupList = ({ searchQuery = "" }) => {
     }, 2000);
   };
 
+  const handlePickUp = async (orderId) => {};
+
+  const handleCancelPickUp = async (orderId) => {};
+
   if (isLoadingOrderList) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -45,7 +63,7 @@ const PickupList = ({ searchQuery = "" }) => {
     );
   }
 
-  const renderOrderItem = ({ item }) => {
+  const renderOrderItem = ({ item}) => {
     return (
       <View style={styles.orderContainer}>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>
@@ -125,8 +143,15 @@ const PickupList = ({ searchQuery = "" }) => {
           <TouchableOpacity style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>Hủy</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmButton}>
-            <Text style={styles.buttonTextStyle}>Xác nhận giao hàng</Text>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={() =>
+              navigation.navigate("DriverOrderPickupDetailScreen", {
+                assignmentId: item.assignmentId,
+              })
+            }
+          >
+            <Text style={styles.buttonTextStyle}>Xác nhận đi lấy hàng</Text>
           </TouchableOpacity>
         </View>
       </View>
