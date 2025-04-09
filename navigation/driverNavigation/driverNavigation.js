@@ -8,7 +8,7 @@ import OrderDetail from "../../screens/driverScreens/orders//delivery/orderDetai
 import AddressNavigateMap from "../../screens/driverScreens/orders/pickup/addressNavigateMap.jsx";
 import OrderPickupDetail from "../../screens/driverScreens/orders/pickup/orderPickupDetail.jsx";
 import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/delivery/addressDeliveryNavigation.jsx";
-
+import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confirmPickup.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -70,6 +70,15 @@ export function DriverHomeScreen() {
         component={OrderPickupDetail}
         options={{
           headerTitle: "Chi tiết đơn hàng",
+          headerTitleAlign: "center",
+          headerStyle: { height: 100 },
+        }}
+      />
+      <Stack.Screen
+        name="ConfirmPickup"
+        component={ConfirmPickup}
+        options={{
+          headerTitle: "Xác nhận đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
         }}

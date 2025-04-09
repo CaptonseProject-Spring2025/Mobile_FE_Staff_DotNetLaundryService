@@ -191,6 +191,8 @@ export default function UpdateUser({ route, navigation }) {
 
     try {
       const result = await updateUser(userDetail.userId, updatedUser);
+      console.log("Update result:", updatedUser);
+      
 
       if (result) {
         // Update the auth store with the new user details

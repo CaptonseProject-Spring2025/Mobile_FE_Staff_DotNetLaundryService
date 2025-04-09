@@ -105,18 +105,18 @@ export default function DriverMenu({ navigation }) {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-         {/* Order pickuping/ delivering section */}
+         {/* Order confirm section */}
          <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate("DriverDeliveryScreen")}
+          onPress={() => navigation.navigate("ConfirmPickup")}
         >
           <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
             <Ionicons name="list-outline" size={28} color="#fff" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Đơn đang thực hiện</Text>
+            <Text style={styles.menuTitle}>đơn hàng cần xác nhận đã lấy hàng</Text>
             <Text style={styles.menuDescription}>
-              Danh sách đơn hàng đang thực hiện
+              Danh sách đơn hàng cần xác nhận đã lấy hàng
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />

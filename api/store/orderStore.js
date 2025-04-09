@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import axiosClient from "../config/axiosClient";
+import { Platform } from "react-native";
 
 const useOrderStore = create((set) => ({
   assignmentList: [],
@@ -59,26 +60,34 @@ const useOrderStore = create((set) => ({
         `/driver/start-pickup?orderId=${orderId}`
       );
       set({ isLoadingPickUp: false });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error starting pick up:", error);
       set({ pickUpError: error.message, isLoadingPickUp: false });
+      throw error;
     }
   },
 
   isLoadingConfirmPickUp: false,
   confirmPickUpError: null,
-  confirmPickUp: async (orderId, note) => {
+  confirmPickUp: async (formData) => {
     try {
       set({ isLoadingConfirmPickUp: true, confirmPickUpError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-pickup?orderId=${orderId}&notes=${note}`
+        `/driver/confirm-picked-up`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       set({ isLoadingConfirmPickUp: false });
       return response.data;
     } catch (error) {
       console.error("Error confirming pick up:", error);
       set({ confirmPickUpError: error.message, isLoadingConfirmPickUp: false });
+      throw error;
     }
   },
 
@@ -88,29 +97,44 @@ const useOrderStore = create((set) => ({
     try {
       set({ isLoadingRevicedPickUp: true, revicedPickUpError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-received?orderId=${orderId}`
+        `/driver/confirm-pickup-success?orderId=${orderId}`
       );
       set({ isLoadingRevicedPickUp: false });
       return response.data;
     } catch (error) {
       console.error("Error confirming pick up:", error);
       set({ revicedPickUpError: error.message, isLoadingRevicedPickUp: false });
+      throw error;
     }
   },
 
   isLoadingCancelPickUp: false,
   cancelPickUpError: null,
-  cancelPickUp: async (orderId, reason) => {
+  cancelPickUp: async (formData) => {
     try {
       set({ isLoadingCancelPickUp: true, cancelPickUpError: null });
       const response = await axiosClient.post(
-        `/driver/cancel-pickup?orderId=${orderId}&reason=${reason}`
+        `/driver/cancel-pickup`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
+      console.log("Cancel pickup response:", response);
       set({ isLoadingCancelPickUp: false });
-      return response.data;
+      return response;
     } catch (error) {
-      console.error("Error confirming pick up:", error);
-      set({ cancelPickUpError: error.message, isLoadingCancelPickUp: false });
+      console.error("Error starting pick up:", error);
+      console.log("Error response data:", error.response?.data);
+      console.log("Error message:", error.message);
+      console.log("Error status:", error.response?.status);
+
+      // Store the most descriptive error message
+      const errorMessage = error.response?.data?.message || error.message;
+      set({ cancelPickUpError: errorMessage, isLoadingPickUp: false });
+      throw error;
     }
   },
 

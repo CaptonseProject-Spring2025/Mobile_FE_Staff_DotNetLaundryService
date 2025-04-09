@@ -17,10 +17,9 @@ import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
 import Toast from "react-native-toast-message";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import * as ImagePicker from "expo-image-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
-const PickupList = ({ searchQuery = "" }) => {
+const ConfirmList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -31,12 +30,9 @@ const PickupList = ({ searchQuery = "" }) => {
     assignmentList,
     isLoadingOrderList,
     fetchAssignmentList,
-    startPickUp,
-    isLoadingPickUp,
-    pickUpError,
-    cancelPickUpError,
-    isLoadingCancelPickUp,
-    cancelPickUp,
+    isLoadingRevicedPickUp,
+    revicedPickUp,
+    revicedPickUpError,
   } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
 
@@ -56,8 +52,7 @@ const PickupList = ({ searchQuery = "" }) => {
         assignmentList.filter(
           (order) =>
             order.status === "ASSIGNED_PICKUP" &&
-            (order.currentStatus === "SCHEDULED_PICKUP" ||
-              order.currentStatus === "PICKINGUP")
+            order.currentStatus === "PICKEDUP"
         )
       );
     }
@@ -72,116 +67,20 @@ const PickupList = ({ searchQuery = "" }) => {
     }, 2000);
   };
 
-  const handlePickUp = async (assignmentId, orderId) => {
+  const handleConfirmPickup = async (orderId) => {
     try {
-      const response = await startPickUp(orderId);
-      // Only navigate if the API call was successful
-      if (response && response.status === 200) {
-        navigation.navigate("DriverOrderPickupDetailScreen", {
-          assignmentId: assignmentId,
-        });
-      }
-      console.log("Pick up response:", response);
-    } catch (error) {
-      console.error("Error picking up order:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        pickUpError ||
-        error.message ||
-        "Đã xảy ra lỗi khi xác nhận lấy hàng.";
-
-      // Show the error in an alert
-      Alert.alert("Lỗi", errorMessage, [{ text: "OK" }]);
-    }
-  };
-
-  const handleCancelPickUp = async () => {
-    try {
-      console.log("Current Order ID:", currentOrderId); // Debug log
-
-      // Check if orderId exists
-      if (!currentOrderId) {
-        return Alert.alert(
-          "Lỗi",
-          "Không tìm thấy mã đơn hàng. Vui lòng thử lại.",
-          [{ text: "OK" }]
-        );
-      }
-
-      // Validate image requirement
-      if (!images || images.length === 0) {
-        return Alert.alert(
-          "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
-          [{ text: "OK" }]
-        );
-      }
-
-      // Validate reason
-      if (!cancelReason || cancelReason.trim() === "") {
-        return Alert.alert("Thiếu thông tin", "Vui lòng nhập lý do huỷ đơn", [
-          { text: "OK" },
-        ]);
-      }
-
-      // Create form data with proper structure
-      const formData = new FormData();
-      formData.append("orderId", currentOrderId);
-      formData.append("reason", cancelReason);
-
-      // Append image with proper structure for FormData
-      const imageUri = images[0];
-      const imageName = imageUri.split("/").pop();
-      const imageType =
-        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
-
-      formData.append("image", {
-        uri: imageUri,
-        name: imageName,
-        type: imageType,
-      });
-
-      console.log("Form data for cancel pick up:", formData);
-
-      // Send the request
-      await cancelPickUp(formData);
-
-      // Close modal and show success toast
-      setCancelModalVisible(false);
-      setCancelReason("");
-      setImages([]);
+      await revicedPickUp(orderId);
 
       Toast.show({
         type: "success",
-        text1: "Đã hủy xác nhận lấy hàng.",
+        text1: "Xác nhận thành công",
+        text2: "Đơn hàng đã được xác nhận.",
       });
-
-      // Refresh list
       fetchAssignmentList();
     } catch (error) {
-      console.log("Cancel pick up error:", error);
-      Alert.alert(
-        "Lỗi",
-        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
-        [{ text: "OK" }]
-      );
-    }
-  };
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      if (result.assets && result.assets.length > 0) {
-        setImages([result.assets[0].uri]);
-      } else if (result.uri) {
-        setImages([result.uri]);
-      }
+      Alert.alert("Lỗi", error?.response?.data);
+      console.log("Error message:", error?.message);
+      console.log("Error status:", error?.response?.status);
     }
   };
 
@@ -273,48 +172,21 @@ const PickupList = ({ searchQuery = "" }) => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
-              styles.cancelButton,
-              isLoadingCancelPickUp && { backgroundColor: "#aaa" },
+              styles.confirmButton,
+              { backgroundColor: "#1E88E5" },
+              isLoadingRevicedPickUp && { opacity: 0.7 },
             ]}
-            onPress={() => {
-              setCancelModalVisible(true);
-              setCurrentOrderId(item.orderId);
-            }}
-            disabled={isLoadingCancelPickUp}
+            onPress={() => handleConfirmPickup(item.orderId)}
+            disabled={isLoadingRevicedPickUp}
           >
-            {isLoadingCancelPickUp ? (
+            {isLoadingRevicedPickUp ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.cancelButtonText}>Hủy</Text>
+              <Text style={styles.buttonTextStyle}>
+                Xác nhận đơn hàng đã lấy
+              </Text>
             )}
           </TouchableOpacity>
-          {item.currentStatus === "PICKINGUP" ? (
-            <TouchableOpacity
-              style={[styles.confirmButton, { backgroundColor: "#1E88E5" }]}
-              onPress={() =>
-                navigation.navigate("DriverOrderPickupDetailScreen", {
-                  assignmentId: item.assignmentId,
-                })
-              }
-            >
-              <Text style={styles.buttonTextStyle}>Đang đi giao</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                isLoadingPickUp && { backgroundColor: "#6c757d" },
-              ]}
-              onPress={() => handlePickUp(item.assignmentId, item.orderId)}
-              disabled={isLoadingPickUp}
-            >
-              {isLoadingPickUp ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonTextStyle}>Xác nhận đi lấy hàng</Text>
-              )}
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     );
@@ -323,7 +195,7 @@ const PickupList = ({ searchQuery = "" }) => {
   return (
     <View style={{ flex: 1, marginHorizontal: 10, marginBottom: 20 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", textAlign: "center" }}>
-        Đơn cần lấy ({filteredOrders?.length || 0})
+        Đơn cần xác nhận ({filteredOrders?.length || 0})
       </Text>
       <FlatList
         data={filteredOrders}
@@ -335,80 +207,6 @@ const PickupList = ({ searchQuery = "" }) => {
         style={{ marginTop: 10 }}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
-      {/* Cancel Reason Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={cancelModalVisible}
-        onRequestClose={() => setCancelModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.centeredView}
-        >
-          <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>Lý do hủy đơn</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Nhập lý do hủy đơn hàng"
-              value={cancelReason}
-              onChangeText={setCancelReason}
-              multiline={true}
-              numberOfLines={4}
-              mode="outlined"
-            />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image-outline" size={24} color="black" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
-            <View style={styles.imagePreviewContainer}>
-              {images.length > 0 ? (
-                <View style={styles.imageWrapper}>
-                  <Image
-                    source={{ uri: images[0] }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setImages([])}
-                  >
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
-              )}
-            </View>
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.buttonCancel]}
-                onPress={() => {
-                  setCancelModalVisible(false);
-                  setCancelReason("");
-                  setImages([]);
-                }}
-              >
-                <Text style={styles.buttonCancelText}>Đóng</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.buttonConfirm]}
-                onPress={() => {
-                  handleCancelPickUp();
-                  setCancelModalVisible(false);
-                  setCancelReason("");
-                  setImages([]);
-                }}
-              >
-                <Text style={styles.buttonConfirmText}>Xác nhận</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 };
@@ -598,4 +396,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PickupList;
+export default ConfirmList;
