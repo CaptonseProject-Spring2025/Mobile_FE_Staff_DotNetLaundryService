@@ -24,7 +24,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
   const [note, setNote] = useState("");
   const [isUploadingWashingUpdate, setIsUploadingWashingUpdate] = useState(false); // Trạng thái loading cho nút "Upload Ảnh và Ghi Chú"
   const [isUploadingWashingConfirm, setIsUploadingWashingConfirm] = useState(false); // Trạng thái loading cho nút "Upload Ảnh và Ghi Chú"
-  const [isUploadingWashingQualityCheck, setIsUploadingWashingQualityCheck] = useState(false); // Trạng thái loading cho nút "Upload Ảnh và Ghi Chú"
+
   
   console.log("photos", photos);
   console.log("note", note);
@@ -70,7 +70,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
       return;
     }
   
-    setIsUploadingWashingConfirm(true); // Bắt đầu trạng thái loading
+    setIsUploadingWashingUpdate(true); // Bắt đầu trạng thái loading
   
     const formData = new FormData();
     formData.append("orderId", orderId); // Thêm orderId
@@ -106,7 +106,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
         Alert.alert("Lỗi", "Không thể kết nối đến server. Vui lòng thử lại.");
       }
     } finally {
-      setIsUploadingWashingConfirm(false); // Kết thúc trạng thái loading
+      setIsUploadingWashingUpdate(false); // Kết thúc trạng thái loading
     }
   };
 
@@ -118,7 +118,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
       return;
     }
   
-    setIsUploadingWashingUpdate(true); // Bắt đầu trạng thái loading
+    setIsUploadingWashingConfirm(true); // Bắt đầu trạng thái loading
   
     const formData = new FormData();
     formData.append("orderId", orderId); // Thêm orderId
@@ -144,7 +144,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
   
       console.log("Cập nhật thành công:", response.data);
       Alert.alert("Thành công", "Đơn hàng đã được cập nhật!");
-      // navigation.goBack(); // Quay lại màn hình trước
+      navigation.goBack(); // Quay lại màn hình trước
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
       if (error.response) {
@@ -154,7 +154,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
         Alert.alert("Lỗi", "Không thể kết nối đến server. Vui lòng thử lại.");
       }
     } finally {
-      setIsUploadingWashingUpdate(false); // Kết thúc trạng thái loading
+      setIsUploadingWashingConfirm(false); // Kết thúc trạng thái loading
     }
 
   };
