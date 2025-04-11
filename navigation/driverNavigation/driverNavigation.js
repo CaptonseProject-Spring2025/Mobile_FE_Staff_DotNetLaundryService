@@ -9,6 +9,8 @@ import AddressNavigateMap from "../../screens/driverScreens/orders/pickup/addres
 import OrderPickupDetail from "../../screens/driverScreens/orders/pickup/orderPickupDetail.jsx";
 import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/delivery/addressDeliveryNavigation.jsx";
 import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confirmPickup.jsx";
+import UserListScreen from '../../screens/driverScreens/chat/UserListScreen.jsx';
+import ChatScreen from '../../screens/driverScreens/chat/ChatScreen.jsx';
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -101,14 +103,16 @@ export function DriverStatisticScreen() {
 }
 
 //man hinh chat
-export function DriverUserScreen() {
+//màn hình chat
+
+export function DriverChatScreen() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="DriverChat"
-        component={DriverChat}
-        options={{ headerShown: false }}
-      />
+    <Stack.Navigator initialRouteName="UserListScreen">
+      <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }}/>
+      <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+          headerTitle: "Trò chuyện",
+          headerTitleAlign: "center",
+        }}/>
     </Stack.Navigator>
   );
 }
