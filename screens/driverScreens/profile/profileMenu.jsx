@@ -17,6 +17,8 @@ export default function ProfileMenu({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, logout, userDetail } = useAuthStore();
 
+
+  console.log("userDetail", userDetail);
   // Initialize auth state and fetch user details when component mounts
   useEffect(() => {
     const initializeAuth = async () => {

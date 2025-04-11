@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   DriverHomeScreen,
   DriverStatisticScreen,
-  DriverChatScreen,
+  DriverUserScreen,
   DriverNotificationScreen,
   DriverAccountScreen,
 } from "./driverNavigation.js";

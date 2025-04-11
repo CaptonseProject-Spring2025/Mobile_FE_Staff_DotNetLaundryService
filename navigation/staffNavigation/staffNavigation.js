@@ -11,7 +11,9 @@ import OrderDetailCheckedSceen from "../../screens/staffScreens/orders/OrderDeta
 import OrderWashingListSceen from "../../screens/staffScreens/orders/OrderWashingListSceen.jsx";
 import OrderDetailWashingScreen from "../../screens/staffScreens/orders/OrdeDetailWashingScreen.jsx";
 import OrderWashedListScreen from "../../screens/staffScreens/orders/OrderWashedListScreen.jsx";
-import OrderDetailWashedScreen from '../../screens/staffScreens/orders/OrderDetailWashedScreen.jsx';
+import OrderDetailWashedScreen from "../../screens/staffScreens/orders/OrderDetailWashedScreen.jsx";
+import UserListScreen from '../../screens/staffScreens/chat/UserListScreen.jsx';
+import ChatScreen from '../../screens/staffScreens/chat/ChatScreen.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -88,7 +90,7 @@ export function StaffHomeScreen() {
           headerTitleAlign: "center",
         }}
       />
-       <Stack.Screen
+      <Stack.Screen
         name="OrderDetailWashedScreen"
         component={OrderDetailWashedScreen}
         options={{
@@ -109,6 +111,20 @@ export function StaffStatisticScreen() {
         component={DriverMenu}
         options={{ headerShown: false }}
       />
+    </Stack.Navigator>
+  );
+}
+
+//màn hình chat
+
+export function StaffChatScreen() {
+  return (
+    <Stack.Navigator initialRouteName="UserListScreen">
+      <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }}/>
+      <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+          headerTitle: "Trò chuyện",
+          headerTitleAlign: "center",
+        }}/>
     </Stack.Navigator>
   );
 }
