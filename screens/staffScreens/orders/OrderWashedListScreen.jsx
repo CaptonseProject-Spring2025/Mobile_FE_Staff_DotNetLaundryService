@@ -7,12 +7,12 @@ function OrderWashedListScreen({ navigation }) {
     orderWashed,
     isLoadingOrderWashed,
     orderWashedError,
-    fetchOrderWashing,
+    fetchOrderWashed,
   } = useCheckOrderStore();
 
   // Gọi API khi màn hình được mount
   useEffect(() => {
-    fetchOrderWashing();
+    fetchOrderWashed();
   }, []);
 
   const renderOrderItem = ({ item }) => (

@@ -101,7 +101,7 @@ export function DriverStatisticScreen() {
 }
 
 //man hinh chat
-export function DriverChatScreen() {
+export function DriverUserScreen() {
   return (
     <Stack.Navigator>
       <Stack.Screen

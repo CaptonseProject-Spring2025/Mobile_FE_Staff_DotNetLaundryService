@@ -123,7 +123,7 @@ const useCheckOrderStore = create((set) => ({
   orderWashed: [],
   isLoadingOrderWashed: false,
   orderWashedError: null,
-  fetchOrderWashing: async () => {
+  fetchOrderWashed: async () => {
     try {
       set({ isLoadingOrderWashed: true, orderWashedError: null });
       const response = await axiosClient.get(`/staff/orders/washed`);
