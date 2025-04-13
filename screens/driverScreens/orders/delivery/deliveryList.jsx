@@ -6,17 +6,37 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
+  ScrollView,
+  Image,
+  Alert,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
-import { useNavigation } from "@react-navigation/native";
-
+import Toast from "react-native-toast-message";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const DeliveryList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const { assignmentList, isLoadingOrderList, fetchAssignmentList } =
-    useOrderStore();
+  const {
+    assignmentList,
+    isLoadingOrderList,
+    fetchAssignmentList,
+    isLoadingStartDelivery,
+    startDelivery,
+    isLoadingCancelDelivery,
+    cancelDelivery,
+  } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [images, setImages] = useState([]);
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -24,10 +44,14 @@ const DeliveryList = ({ searchQuery = "" }) => {
   }, [fetchAssignmentList]);
 
   useEffect(() => {
-    // Filter orders with status "ASSIGNED_DELIVERY"
     if (assignmentList) {
       setFilteredOrders(
-        assignmentList.filter((order) => order.status === "ASSIGNED_DELIVERY")
+        assignmentList.filter(
+          (order) =>
+            order.status === "ASSIGNED_DELIVERY" &&
+            (order.currentStatus === "SCHEDULED_DELIVERY" ||
+              order.currentStatus === "DELIVERING")
+        )
       );
     }
   }, [assignmentList]);
@@ -40,6 +64,116 @@ const DeliveryList = ({ searchQuery = "" }) => {
     }, 2000);
   };
 
+  const handleCancelDelivery = async () => {
+    try {
+      // Check if orderId exists
+      if (!currentOrderId) {
+        return Alert.alert(
+          "Lỗi",
+          "Không tìm thấy mã đơn hàng. Vui lòng thử lại.",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Validate image requirement
+      if (!images || images.length === 0) {
+        return Alert.alert(
+          "Thiếu thông tin",
+          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Validate reason
+      if (!cancelReason || cancelReason.trim() === "") {
+        return Alert.alert("Thiếu thông tin", "Vui lòng nhập lý do huỷ đơn", [
+          { text: "OK" },
+        ]);
+      }
+
+      // Create form data with proper structure
+      const formData = new FormData();
+      formData.append("orderId", currentOrderId);
+      formData.append("reason", cancelReason);
+
+      // Append image with proper structure for FormData
+      const imageUri = images[0];
+      const imageName = imageUri.split("/").pop();
+      const imageType =
+        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
+
+      formData.append("image", {
+        uri: imageUri,
+        name: imageName,
+        type: imageType,
+      });
+
+
+      // Send the request
+      await cancelPickUp(formData); 
+
+      // Close modal and show success toast
+      setCancelModalVisible(false);
+      setCancelReason("");
+      setImages([]);
+
+      Toast.show({
+        type: "success",
+        text1: "Đã hủy xác nhận lấy hàng.",
+      });
+
+      // Refresh list
+      fetchAssignmentList();
+    } catch (error) {
+      console.log("Cancel pick up error:", error);
+      Alert.alert(
+        "Lỗi",
+        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  const handleDelivery = async (assignmentId, orderId) => {
+    try {
+      const response = await startDelivery(orderId);
+      if (response && response.status === 200) {
+        navigation.navigate("DriverDeliveryOrderDetailScreen", {
+          assignmentId: assignmentId,
+        });
+      }
+      console.log("Pick up response:", response.status);
+    } catch (error) {
+      console.error("Error picking up order:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        pickUpError ||
+        error.message ||
+        "Đã xảy ra lỗi khi xác nhận lấy hàng.";
+
+      // Show the error in an alert
+      Alert.alert("Lỗi", errorMessage, [{ text: "OK" }]);
+    }
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      if (result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
+      } else if (result.uri) {
+        setImages([...images, result.uri]);
+      }
+    }
+  };
+
   if (isLoadingOrderList) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -48,6 +182,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
       </View>
     );
   }
+
   const renderOrderItem = ({ item }) => {
     return (
       <View style={styles.orderContainer}>
@@ -125,18 +260,52 @@ const DeliveryList = ({ searchQuery = "" }) => {
 
         {/* Button Xác nhận lấy hàng */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>Hủy</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmButton}
-          onPress={() =>
-            navigation.navigate("DriverDeliveryOrderDetailScreen", {
-              assignmentId: item.assignmentId,
-            })
-          }
+          <TouchableOpacity
+            style={[
+              styles.cancelButton,
+              isLoadingCancelDelivery && { backgroundColor: "#aaa" },
+            ]}
+            onPress={() => {
+              setCancelModalVisible(true);
+              setCurrentOrderId(item.orderId);
+            }}
+            disabled={isLoadingCancelDelivery}
           >
-            <Text style={styles.buttonTextStyle}>Xác nhận giao hàng</Text>
+            {isLoadingCancelDelivery ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.cancelButtonText}>Hủy</Text>
+            )}
           </TouchableOpacity>
+          {item.currentStatus === "DELIVERING" ? (
+            <TouchableOpacity
+              style={[styles.confirmButton, { backgroundColor: "#1E88E5" }]}
+              onPress={() =>
+                navigation.navigate("DriverDeliveryOrderDetailScreen", {
+                  assignmentId: item.assignmentId,
+                })
+              }
+            >
+              <Text style={styles.buttonTextStyle}>Đang đi giao</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.confirmButton,
+                isLoadingStartDelivery && { backgroundColor: "#6c757d" },
+              ]}
+              onPress={() => handleDelivery(item.assignmentId, item.orderId)}
+              disabled={isLoadingStartDelivery}
+            >
+              {isLoadingStartDelivery ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonTextStyle}>
+                  Xác nhận đi giao hàng
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -157,14 +326,100 @@ const DeliveryList = ({ searchQuery = "" }) => {
         style={{ marginTop: 10 }}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
+      {/* Cancel Reason Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={cancelModalVisible}
+        onRequestClose={() => setCancelModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.centeredView}
+        >
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Lý do hủy đơn</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Nhập lý do hủy đơn hàng"
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              multiline={true}
+              numberOfLines={4}
+              mode="outlined"
+            />
+            <TouchableOpacity
+              style={styles.imagePickerButton}
+              onPress={pickImage}
+            >
+              <Ionicons name="image" size={24} color="#63B35C" />
+              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+            </TouchableOpacity>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+              )}
+            </View>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonCancel]}
+                onPress={() => {
+                  setCancelModalVisible(false);
+                  setCancelReason("");
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonCancelText}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonConfirm]}
+                onPress={() => {
+                  handleCancelDelivery();
+                  setCancelModalVisible(false);
+                  setCancelReason("");
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonConfirmText}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   orderContainer: {
-    margin: 5,
-    padding: 20,
+    margin: 2,
+    padding: 12,
     backgroundColor: "#fff",
     borderRadius: 10,
     marginBottom: 20,
@@ -197,8 +452,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginVertical: 10,
   },
   confirmButton: {
@@ -241,6 +496,122 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  modalInput: {
+    width: 250,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
+  },
+  imagePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  imagePickerButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#555",
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    marginBottom: 15,
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  modalButton: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    width: "45%",
+    alignItems: "center",
+  },
+  buttonCancel: {
+    backgroundColor: "#f8f8f8",
+  },
+  buttonConfirm: {
+    backgroundColor: "#02A257",
+  },
+  buttonCancelText: {
+    color: "#333",
+    fontWeight: "600",
+  },
+  buttonConfirmText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  imagePreviewContainer: {
+    width: 250,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 5,
+  },
+  imagesScrollContainer: {
+    flexDirection: "row",
+    paddingVertical: 2,
+    paddingHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  imageWrapper: {
+    width: 120,
+    height: 120,
+    position: "relative",
+    marginRight: 10,
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    backgroundColor: "white",
+    borderRadius: 12,
   },
 });
 
