@@ -12,6 +12,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Image,
+  ScrollView,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
@@ -170,17 +171,18 @@ const PickupList = ({ searchQuery = "" }) => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
     });
 
     if (!result.canceled) {
       if (result.assets && result.assets.length > 0) {
-        setImages([result.assets[0].uri]);
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
       } else if (result.uri) {
-        setImages([result.uri]);
+        setImages([...images, result.uri]);
       }
     }
   };
@@ -297,7 +299,7 @@ const PickupList = ({ searchQuery = "" }) => {
                 })
               }
             >
-              <Text style={styles.buttonTextStyle}>Đang đi giao</Text>
+              <Text style={styles.buttonTextStyle}>Đang đi lấy hàng</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -361,24 +363,36 @@ const PickupList = ({ searchQuery = "" }) => {
               style={styles.imagePickerButton}
               onPress={pickImage}
             >
-              <Ionicons name="image-outline" size={24} color="black" />
+              <Ionicons name="image" size={24} color="#63B35C" />
               <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
             </TouchableOpacity>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
-                <View style={styles.imageWrapper}>
-                  <Image
-                    source={{ uri: images[0] }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setImages([])}
-                  >
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
               ) : (
                 <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
               )}
@@ -523,13 +537,18 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 100,
-    marginBottom: 15,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
   },
   imagePickerButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   imagePickerButtonText: {
     marginLeft: 10,
@@ -568,7 +587,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   imagePreviewContainer: {
-    width: "100%",
+    width: 250,
     minHeight: 120,
     justifyContent: "center",
     alignItems: "center",
@@ -578,10 +597,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
+  imagesScrollContainer: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    gap: 10,
+  },
   imageWrapper: {
     width: 120,
     height: 120,
     position: "relative",
+    marginRight: 10,
   },
   imagePreview: {
     width: 120,

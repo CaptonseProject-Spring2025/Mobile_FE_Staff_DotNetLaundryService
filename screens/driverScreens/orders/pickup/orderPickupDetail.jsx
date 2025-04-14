@@ -107,6 +107,11 @@ const OrderPickupDetail = ({ navigation, route }) => {
 
   const handleCancelPickUp = async () => {
     try {
+      if (!assignmentDetail.orderId) {
+        return Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng", [
+          { text: "OK" },
+        ]);
+      }
       // Validate image requirement
       if (!images || images.length === 0) {
         return Alert.alert(
@@ -144,7 +149,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
 
       // Send the request
       await cancelPickUp(formData);
-      navigation.goBack();
 
       // Close modal and show success toast
       setCancelModalVisible(false);
@@ -155,9 +159,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
         type: "success",
         text1: "Đã hủy xác nhận lấy hàng.",
       });
-
-      // Refresh list
-      fetchAssignmentList();
+      navigation.goBack();
     } catch (error) {
       console.log("Cancel pick up error:", error);
       Alert.alert(
@@ -170,17 +172,18 @@ const OrderPickupDetail = ({ navigation, route }) => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
     });
 
     if (!result.canceled) {
       if (result.assets && result.assets.length > 0) {
-        setImages([result.assets[0].uri]);
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
       } else if (result.uri) {
-        setImages([result.uri]);
+        setImages([...images, result.uri]);
       }
     }
   };
@@ -206,7 +209,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
-      formData.append("notes", completeNote); // Changed from "note" to "notes"
+      formData.append("notes", completeNote);
 
       // Append image with proper structure for FormData
       const imageUri = images[0];
@@ -220,13 +223,11 @@ const OrderPickupDetail = ({ navigation, route }) => {
         type: imageType,
       });
 
-      console.log("Form data for confirming pickup:", formData);
-
+      setCompleteModalVisible(false);
       // Call the API
-      const response = await confirmPickUp(formData);
+      await confirmPickUp(formData);
 
       // Close modal and reset values
-      setCompleteModalVisible(false);
       setCompleteNote("");
       setImages([]);
 
@@ -295,24 +296,36 @@ const OrderPickupDetail = ({ navigation, route }) => {
               style={styles.imagePickerButton}
               onPress={pickImage}
             >
-              <Ionicons name="image-outline" size={24} color="black" />
+              <Ionicons name="image" size={24} color="#63B35C" />
               <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
             </TouchableOpacity>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
-                <View style={styles.imageWrapper}>
-                  <Image
-                    source={{ uri: images[0] }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setImages([])}
-                  >
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
               ) : (
                 <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
               )}
@@ -331,7 +344,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonConfirm]}
                 onPress={() => {
-                  handleCancelPickUp(assignmentDetail.orderId);
+                  handleCancelPickUp();
                   setCancelModalVisible(false);
                   setCancelReason("");
                   setImages([]);
@@ -370,24 +383,36 @@ const OrderPickupDetail = ({ navigation, route }) => {
               style={styles.imagePickerButton}
               onPress={pickImage}
             >
-              <Ionicons name="image-outline" size={24} color="black" />
+              <Ionicons name="image-outline" size={24} color="#63B35C" />
               <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
             </TouchableOpacity>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
-                <View style={styles.imageWrapper}>
-                  <Image
-                    source={{ uri: images[0] }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setImages([])}
-                  >
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
               ) : (
                 <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
               )}
@@ -580,10 +605,10 @@ const OrderPickupDetail = ({ navigation, route }) => {
                 gap: 10,
               }}
             >
-              {orderDetail ? (
+              {assignmentDetail ? (
                 <>
                   <Text style={{ fontSize: 14, fontWeight: "600" }}>
-                    {orderDetail.pickupName} - {orderDetail.pickupPhone}
+                    {assignmentDetail.fullname} - {assignmentDetail.phonenumber}
                   </Text>
                   <Text
                     style={{
@@ -594,7 +619,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
                     numberOfLines={3}
                     ellipsizeMode="tail"
                   >
-                    {orderDetail.pickupAddressDetail}
+                    {assignmentDetail.pickupAddress}
                   </Text>
                 </>
               ) : (
@@ -629,20 +654,29 @@ const OrderPickupDetail = ({ navigation, route }) => {
       </ScrollView>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
+          style={[
+            styles.button,
+            styles.cancelButton,
+            isLoadingCancelPickUp && { backgroundColor: "#6c757d" },
+          ]}
           onPress={() => setCancelModalVisible(true)}
+          disabled={isLoadingCancelPickUp}
         >
-          <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          {isLoadingCancelPickUp ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.button,
             styles.completeButton,
-            isLoadingConfirmPickUp && { backgroundColor: "#6c757d" }, // Gray out when loading
+            isLoadingConfirmPickUp && { backgroundColor: "#6c757d" },
           ]}
           onPress={() => setCompleteModalVisible(true)}
-          disabled={isLoadingConfirmPickUp} // Disable when loading
+          disabled={isLoadingConfirmPickUp}
         >
           {isLoadingConfirmPickUp ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -790,13 +824,18 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 100,
-    marginBottom: 15,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
   },
   imagePickerButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   imagePickerButtonText: {
     marginLeft: 10,
@@ -845,10 +884,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
+  imagesScrollContainer: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    gap: 10,
+  },
   imageWrapper: {
     width: 120,
     height: 120,
     position: "relative",
+    marginRight: 10,
   },
   imagePreview: {
     width: 120,

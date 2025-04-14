@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -15,6 +15,7 @@ import {
 import { Divider, Avatar } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
 import useOrderStore from "../../../../api/store/orderStore";
+import { useFocusEffect } from "@react-navigation/native";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -104,7 +105,10 @@ const OrderDetail = ({ navigation, route }) => {
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [completeModalVisible, setCompleteModalVisible] = useState(false);
+  const [completeNote, setCompleteNote] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [images, setImages] = useState([]);
   const { assignmentId } = route.params;
   const {
     fetchOrderDetail,
@@ -113,6 +117,10 @@ const OrderDetail = ({ navigation, route }) => {
     fetchAssignmentDetail,
     assignmentDetail,
     isLoadingAssignmentDetail,
+    isLoadingCancelDelivery,
+    cancelDelivery,
+    confirmDelivery,
+    isLoadingConfirmDelivery,
   } = useOrderStore();
 
   useEffect(() => {
@@ -154,7 +162,181 @@ const OrderDetail = ({ navigation, route }) => {
     fetchOrderData();
   }, [assignmentDetail]);
 
-  console.log("Order Detail:", orderDetail);
+  console.log("Assignment Detail:", orderDetail);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        if (assignmentId) {
+          try {
+            setDataLoaded(false);
+            await fetchAssignmentDetail(assignmentId);
+          } catch (error) {
+            console.error("Error fetching assignment details:", error);
+            Toast.show({
+              type: "error",
+              text1: "Lỗi",
+              text2: "Không thể tải thông tin đơn hàng",
+            });
+          }
+        }
+      };
+      fetchData();
+    }, [assignmentId])
+  );
+
+  const handleCancelDelivery = async () => {
+    try {
+      // Check if orderId exists
+      if (!currentOrderId) {
+        return Alert.alert(
+          "Lỗi",
+          "Không tìm thấy mã đơn hàng. Vui lòng thử lại.",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Validate image requirement
+      if (!images || images.length === 0) {
+        return Alert.alert(
+          "Thiếu thông tin",
+          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Validate reason
+      if (!cancelReason || cancelReason.trim() === "") {
+        return Alert.alert("Thiếu thông tin", "Vui lòng nhập lý do huỷ đơn", [
+          { text: "OK" },
+        ]);
+      }
+
+      // Create form data with proper structure
+      const formData = new FormData();
+      formData.append("orderId", currentOrderId);
+      formData.append("reason", cancelReason);
+
+      // Append image with proper structure for FormData
+      const imageUri = images[0];
+      const imageName = imageUri.split("/").pop();
+      const imageType =
+        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
+
+      formData.append("image", {
+        uri: imageUri,
+        name: imageName,
+        type: imageType,
+      });
+
+      // Send the request
+      await cancelPickUp(formData);
+
+      // Close modal and show success toast
+      setCancelModalVisible(false);
+      setCancelReason("");
+      setImages([]);
+
+      Toast.show({
+        type: "success",
+        text1: "Đã hủy xác nhận lấy hàng.",
+      });
+
+      // Refresh list
+      fetchAssignmentList();
+    } catch (error) {
+      console.log("Cancel pick up error:", error);
+      Alert.alert(
+        "Lỗi",
+        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    try {
+      // Validate image requirement
+      if (!images || images.length === 0) {
+        return Alert.alert(
+          "Thiếu thông tin",
+          "Vui lòng gửi ít nhất một ảnh xác nhận lấy hàng",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Require notes field
+      if (!completeNote || completeNote.trim() === "") {
+        return Alert.alert("Thiếu thông tin", "Vui lòng nhập ghi chú", [
+          { text: "OK" },
+        ]);
+      }
+
+      // Create form data with proper structure
+      const formData = new FormData();
+      formData.append("orderId", assignmentDetail.orderId);
+      formData.append("notes", completeNote);
+
+      // Append image with proper structure for FormData
+      const imageUri = images[0];
+      const imageName = imageUri.split("/").pop();
+      const imageType =
+        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
+
+      formData.append("image", {
+        uri: imageUri,
+        name: imageName,
+        type: imageType,
+      });
+
+      setCompleteModalVisible(false);
+      // Call the API
+      await confirmDelivery(formData);
+
+      // Close modal and reset values
+      setCompleteNote("");
+      setImages([]);
+
+      Toast.show({
+        type: "success",
+        text1: "Đơn hàng đã hoàn thành",
+        text2: "Xác nhận lấy hàng thành công",
+      });
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error confirming pick up:", error);
+
+      // Show specific validation errors if available
+      const errorMsg = error.response?.data?.errors?.notes
+        ? error.response.data.errors.notes[0]
+        : confirmPickUpError || "Không thể xác nhận lấy hàng";
+
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: errorMsg,
+      });
+      console.log("Confirm pick up error:", error.response?.data);
+    }
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      if (result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
+      } else if (result.uri) {
+        setImages([...images, result.uri]);
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -339,7 +521,7 @@ const OrderDetail = ({ navigation, route }) => {
                     deliveryLatitude: orderDetail.deliveryLatitude,
                     deliveryName: orderDetail.deliveryName,
                     deliveryPhone: orderDetail.deliveryPhone,
-                    deliveryAddressDetail: orderDetail.deliveryAddressDetail
+                    deliveryAddressDetail: orderDetail.deliveryAddressDetail,
                   },
                   showTravelingArrow: true,
                 })
@@ -385,10 +567,10 @@ const OrderDetail = ({ navigation, route }) => {
                 gap: 10,
               }}
             >
-              {orderDetail ? (
+              {assignmentDetail ? (
                 <>
                   <Text style={{ fontSize: 14, fontWeight: "600" }}>
-                    {orderDetail.pickupName} - {orderDetail.pickupPhone}
+                    {assignmentDetail.fullname} - {assignmentDetail.phonenumber}
                   </Text>
                   <Text
                     style={{
@@ -399,7 +581,7 @@ const OrderDetail = ({ navigation, route }) => {
                     numberOfLines={3}
                     ellipsizeMode="tail"
                   >
-                    {orderDetail.pickupAddressDetail}
+                    {assignmentDetail.deliveryAddress}
                   </Text>
                 </>
               ) : (
