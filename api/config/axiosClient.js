@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { shouldRefreshToken, STORAGE_KEYS } from "../utils/authUtils";
 
-const BASE_URL = "https://laundryserviceapi.azurewebsites.net/api";
+const BASE_URL = "https://laundry.vuhai.me/api";
 
 // Cache for token to avoid excessive AsyncStorage reads
 let tokenCache = {

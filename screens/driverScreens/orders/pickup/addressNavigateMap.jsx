@@ -77,6 +77,20 @@ const AddressNavigateMap = () => {
               longitude: userData.pickupLongitude,
             });
           }
+
+          // Initial zoom to driver location
+          setTimeout(() => {
+            if (cameraRef.current) {
+              cameraRef.current.setCamera({
+                centerCoordinate: [
+                  currentLocation.coords.longitude,
+                  currentLocation.coords.latitude,
+                ],
+                zoomLevel: 15,
+                animationDuration: 1000,
+              });
+            }
+          }, 1000);
         } catch (error) {
           console.error("Error getting location:", error);
           // Fallback to default driver location
@@ -232,24 +246,6 @@ const AddressNavigateMap = () => {
       setIsLoading(false);
     }
   };
-
-  const fitBounds = () => {
-    if (!driverLocation || !userLocation || !cameraRef.current) return;
-
-    const bounds = [
-      [driverLocation.longitude, driverLocation.latitude],
-      [userLocation.longitude, userLocation.latitude],
-    ];
-
-    cameraRef.current.fitBounds(bounds[0], bounds[1], 50, 200);
-  };
-
-  // When locations change, fit to bounds
-  useEffect(() => {
-    if (driverLocation && userLocation) {
-      setTimeout(fitBounds, 1000);
-    }
-  }, [driverLocation, userLocation]);
 
   const handleLocationUpdate = (location) => {
     if (!location || !location.coords) return;
@@ -420,7 +416,6 @@ const AddressNavigateMap = () => {
                   style={styles.endNavButton}
                   onPress={() => {
                     setIsDrivingView(false);
-                    setTimeout(fitBounds, 500);
                   }}
                 >
                   <Text style={styles.endNavButtonText}>Kết thúc</Text>
@@ -434,22 +429,9 @@ const AddressNavigateMap = () => {
             <Card style={styles.bottomCard}>
               <Card.Content>
                 <View style={styles.userInfoContainer}>
-                  <Avatar.Icon
-                    size={50}
-                    icon="account"
-                    backgroundColor="#02A257"
-                  />
-                  <View style={styles.userTextInfo}>
-                    <Text style={styles.userName}>
-                      {userData?.pickupName || "Customer"}
-                    </Text>
-                    <Text style={styles.userPhone}>
-                      {userData?.pickupPhone || "N/A"}
-                    </Text>
-                    <Text style={styles.userAddress} numberOfLines={2}>
-                      {userData?.pickupAddressDetail || "No address details"}
-                    </Text>
-                  </View>
+                  <Text style={styles.userAddress} numberOfLines={2}>
+                    Địa chỉ: {userData?.pickupAddressDetail || "No address details"}
+                  </Text>
                 </View>
 
                 <View style={styles.routeInfoContainer}>
@@ -579,18 +561,9 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     flex: 1,
   },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  userPhone: {
-    fontSize: 16,
-    color: "#666",
-    marginVertical: 2,
-  },
   userAddress: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 18, 
+    fontWeight: "bold",
     flexShrink: 1,
   },
   routeInfoContainer: {

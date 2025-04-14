@@ -525,6 +525,39 @@ const OrderPickupDetail = ({ navigation, route }) => {
           </View>
         </View>
         <View style={styles.sectionDivider} />
+        
+        {/* User Information Section */}
+        <View>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>
+            Thông tin khách hàng
+          </Text>
+          <Divider style={{ marginVertical: 10 }} />
+          <View style={styles.userInfoContainer}>
+            <View style={styles.userInfoHeader}>
+              <Text style={styles.userInfoTitle}>Thông tin liên hệ</Text>
+              <TouchableOpacity style={styles.chatButton}>
+                <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
+                <Text style={styles.chatButtonText}>Nhắn tin</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="person-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Họ tên:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.fullname || "Chưa có thông tin"}
+              </Text>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="call-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Số điện thoại:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.phonenumber || "Chưa có thông tin"}
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.sectionDivider} />
         {/* Location section */}
         <View>
           <View
@@ -891,6 +924,44 @@ const styles = StyleSheet.create({
     right: -10,
     backgroundColor: "white",
     borderRadius: 12,
+  },
+  userInfoContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 8,
+    gap: 10,
+  },
+  userInfoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userInfoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  chatButtonText: {
+    fontSize: 14,
+    color: "#63B35C",
+  },
+  userInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  userInfoValue: {
+    fontSize: 14,
+    color: "#666",
   },
 });
 
