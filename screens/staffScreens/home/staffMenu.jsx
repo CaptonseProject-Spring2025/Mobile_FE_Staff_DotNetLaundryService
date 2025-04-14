@@ -84,7 +84,7 @@ export default function StaffrMenu({ navigation }) {
       icon: "✓✓",
       title: "Đơn Nhận Checked",
       description: "Danh sách đơn hàng nhận checked",
-      route: "OrderCheckedListScreen",
+      route: "OrderListCheckedScreen",
       bgColor: "bg-orange-500",
       count: orderChecked?.length || 0
     },

@@ -67,8 +67,8 @@ export function StaffHomeScreen() {
         }}
       />
       <Stack.Screen
-        name="OrderWashingListSceen"
-        component={OrderWashingListSceen}
+        name="OrderWashingListScreen"
+        component={OrderWashingListSceen} 
         options={{
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import useCheckOrderStore from "../../../api/store/checkOrderStore";
 
-function OrderWashingListSceen({ navigation }) {
+function OrderWashingListScreen({ navigation }) {
   const {
     orderWashing,
     isLoadingOrderWashing,
@@ -86,4 +86,4 @@ function OrderWashingListSceen({ navigation }) {
   );
 }
 
-export default OrderWashingListSceen;
+export default OrderWashingListScreen;

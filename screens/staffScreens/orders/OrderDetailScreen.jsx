@@ -242,8 +242,15 @@ const OrderDetailScreen = ({ route, navigation }) => {
       await axiosClient.post(
         `staff/orders/checking/confirm?orderId=${orderId}&notes=${note}`
       );
-      Alert.alert("Thành công", "Đơn hàng đã được xác nhận!");
-      navigation.goBack();
+      Alert.alert("Thành công", "Đơn hàng đã được xác nhận!", [
+        {
+          text: "OK", 
+          onPress: () => {
+            // Sau khi xác nhận, quay lại màn hình danh sách thay vì điều hướng tới một màn hình không tồn tại
+            navigation.goBack();
+          }
+        }
+      ]);
     } catch (error) {
       console.error(error);
       Alert.alert("Lỗi", "Không thể xác nhận đơn hàng. Vui lòng thử lại.");
