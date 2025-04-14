@@ -12,10 +12,10 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import MapboxGL, { NativeUserLocation } from "@rnmapbox/maps";
+import MapboxGL from "@rnmapbox/maps";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { Avatar, Card } from "react-native-paper";
+import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
 
@@ -48,10 +48,31 @@ const AddressNavigateMap = () => {
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [lastFetchedLocation, setLastFetchedLocation] = useState(null);
+  const [isFetchingRoute, setIsFetchingRoute] = useState(false);
 
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
+
+  // Calculate distance between coordinates in meters using haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180; // φ in radians
+    const φ2 = (lat2 * Math.PI) / 180; // φ in radians
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180; // Δλ in radians
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // in meters
+  };
 
   // Request permission and get current location
   useEffect(() => {
@@ -110,8 +131,8 @@ const AddressNavigateMap = () => {
     if (permissionStatus === "granted") {
       locationSubscription = Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          timeInterval: 1000,
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 3000, 
           distanceInterval: 10,
         },
         (location) => {
@@ -120,9 +141,20 @@ const AddressNavigateMap = () => {
             longitude: location.coords.longitude,
           };
           setCurrentDriverLocation(newLocation);
-          setDriverLocation(newLocation); // Update driver location to trigger route recalculation
-          // Force update of direct line by incrementing key
-          setLineUpdateKey((prev) => prev + 1);
+          setCurrentLocation(newLocation);
+
+          if (driverLocation) {
+            const distanceMoved = calculateDistance(
+              driverLocation.latitude, driverLocation.longitude,
+              newLocation.latitude, newLocation.longitude
+            );
+
+            if (distanceMoved > 5) { // if distance moved is more than 5 meters update driver location
+              setDriverLocation(newLocation);
+            }
+          } else {
+            setDriverLocation(newLocation);
+          }
         }
       );
     }
@@ -134,7 +166,7 @@ const AddressNavigateMap = () => {
     };
   }, [permissionStatus]);
 
-  // Force regular updates of the direct line
+  // Force regular updates of the direct line but less frequently
   useEffect(() => {
     const updateInterval = setInterval(() => {
       setForceUpdate((prev) => prev + 1);
@@ -150,67 +182,35 @@ const AddressNavigateMap = () => {
     }
   }, [forceUpdate, currentDriverLocation, userLocation]);
 
-  // Get route when either location changes
+  // Get route when either location changes significantly
   useEffect(() => {
-    if (driverLocation && userLocation) {
-      fetchRoute();
+    if (driverLocation && userLocation && !isFetchingRoute) {
+      // Check if we need to fetch a new route
+      let shouldFetch = true;
+
+      if (lastFetchedLocation) {
+        const distanceMoved = calculateDistance(
+          lastFetchedLocation.latitude, lastFetchedLocation.longitude,
+          driverLocation.latitude, driverLocation.longitude
+        );
+
+        // Only fetch new route if moved more than 50 meters from last fetch
+        shouldFetch = distanceMoved > 50;
+      }
+
+      if (shouldFetch) {
+        fetchDirectionsRoute();
+      }
     }
   }, [driverLocation, userLocation]);
 
-  const fetchRoute = async () => {
-    try {
-      setIsLoading(true);
-
-      // Format coordinates for Optimization API
-      const coordinates = [
-        `${driverLocation.longitude},${driverLocation.latitude}`,
-        `${userLocation.longitude},${userLocation.latitude}`,
-      ].join(";");
-
-      // Call Mapbox Optimization API
-      const response = await axios.get(
-        `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coordinates}`,
-        {
-          params: {
-            access_token: MAPBOX_ACCESS_TOKEN,
-            geometries: "geojson",
-            overview: "full",
-            steps: true,
-            source: "first",
-            destination: "last",
-            roundtrip: false,
-          },
-        }
-      );
-
-      if (response.data.trips && response.data.trips.length > 0) {
-        const optimizedTrip = response.data.trips[0];
-
-        const routeGeoJSON = {
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: optimizedTrip.geometry.coordinates,
-          },
-        };
-
-        setRouteGeoJSON(routeGeoJSON);
-        setDistance((optimizedTrip.distance / 1000).toFixed(1)); // Convert to km
-        setDuration(Math.round(optimizedTrip.duration / 60)); // Convert to minutes
-        setRouteCoordinates(optimizedTrip.geometry.coordinates);
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching optimized route:", error);
-      // Fallback to regular directions API if optimization fails
-      fetchDirectionsRoute();
-    }
-  };
-
   const fetchDirectionsRoute = async () => {
+    if (isFetchingRoute) return;
+
     try {
+      setIsFetchingRoute(true);
+      setLastFetchedLocation(driverLocation);
+
       const response = await axios.get(
         `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
         {
@@ -244,6 +244,8 @@ const AddressNavigateMap = () => {
     } catch (error) {
       console.error("Error fetching route:", error);
       setIsLoading(false);
+    } finally {
+      setIsFetchingRoute(false);
     }
   };
 
@@ -255,12 +257,26 @@ const AddressNavigateMap = () => {
       longitude: location.coords.longitude,
     };
 
-    // Update all location states with the same value
+    // Just update current location, but don't trigger route recalculation
     setCurrentDriverLocation(newLocation);
-    setDriverLocation(newLocation);
     setCurrentLocation(newLocation);
-    // Trigger line update
-    setLineUpdateKey((prev) => prev + 1);
+
+    // Only update driver location and trigger recalculation if moved significantly
+    if (driverLocation) {
+      const distanceMoved = calculateDistance(
+        driverLocation.latitude, driverLocation.longitude,
+        newLocation.latitude, newLocation.longitude
+      );
+
+      if (distanceMoved > 30) { // Only update if moved more than 30 meters
+        setDriverLocation(newLocation);
+        // Trigger line update
+        setLineUpdateKey((prev) => prev + 1);
+      }
+    } else {
+      setDriverLocation(newLocation);
+      setLineUpdateKey((prev) => prev + 1);
+    }
   };
 
   if (permissionStatus === "denied") {
@@ -562,7 +578,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userAddress: {
-    fontSize: 18, 
+    fontSize: 16,
     fontWeight: "bold",
     flexShrink: 1,
   },

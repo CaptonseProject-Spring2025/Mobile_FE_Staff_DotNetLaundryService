@@ -12,10 +12,11 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
-import { Divider, Avatar } from "react-native-paper";
+import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
 import useOrderStore from "../../../../api/store/orderStore";
 import { useFocusEffect } from "@react-navigation/native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -370,8 +371,6 @@ const OrderDetail = ({ navigation, route }) => {
                 onPress={() => {
                   console.log("Order canceled with reason:", cancelReason);
                   setCancelModalVisible(false);
-                  // Here you would call your API to cancel the order
-                  // and then potentially navigate back or show confirmation
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -481,6 +480,38 @@ const OrderDetail = ({ navigation, route }) => {
             </View>
           </View>
         </View>
+        <View style={styles.sectionDivider} />
+        {/* User Information Section */}
+        <View>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>
+            Thông tin khách hàng
+          </Text>
+          <Divider style={{ marginVertical: 10 }} />
+          <View style={styles.userInfoContainer}>
+            <View style={styles.userInfoHeader}>
+              <Text style={styles.userInfoTitle}>Thông tin liên hệ</Text>
+              <TouchableOpacity style={styles.chatButton}>
+                <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
+                <Text style={styles.chatButtonText}>Nhắn tin</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="person-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Họ tên:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.fullname || "Chưa có thông tin"}
+              </Text>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="call-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Số điện thoại:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.phonenumber || "Chưa có thông tin"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.sectionDivider} />
         {/* Location section */}
         <View>
@@ -846,6 +877,44 @@ const styles = StyleSheet.create({
   buttonConfirmText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  userInfoContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 8,
+    gap: 10,
+  },
+  userInfoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userInfoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  chatButtonText: {
+    fontSize: 14,
+    color: "#63B35C",
+  },
+  userInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  userInfoValue: {
+    fontSize: 14,
+    color: "#666",
   },
 });
 
