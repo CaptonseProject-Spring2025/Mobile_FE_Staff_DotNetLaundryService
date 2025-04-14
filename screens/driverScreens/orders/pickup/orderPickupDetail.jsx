@@ -45,24 +45,27 @@ const OrderPickupDetail = ({ navigation, route }) => {
     confirmPickUpError,
   } = useOrderStore();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (assignmentId) {
-        try {
-          setDataLoaded(false);
-          await fetchAssignmentDetail(assignmentId);
-        } catch (error) {
-          console.error("Error fetching assignment details:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải thông tin đơn hàng",
-          });
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        if (assignmentId) {
+          try {
+            setDataLoaded(false);
+            await fetchAssignmentDetail(assignmentId);
+          } catch (error) {
+            console.error("Error fetching assignment details:", error);
+            Toast.show({
+              type: "error",
+              text1: "Lỗi",
+              text2: "Không thể tải thông tin đơn hàng",
+            });
+            setDataLoaded(true); 
+          }
         }
-      }
-    };
-    fetchData();
-  }, [assignmentId]);
+      };
+      fetchData();
+    }, [assignmentId])
+  );
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -84,26 +87,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
     fetchOrderData();
   }, [assignmentDetail]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchData = async () => {
-        if (assignmentId) {
-          try {
-            setDataLoaded(false);
-            await fetchAssignmentDetail(assignmentId);
-          } catch (error) {
-            console.error("Error fetching assignment details:", error);
-            Toast.show({
-              type: "error",
-              text1: "Lỗi",
-              text2: "Không thể tải thông tin đơn hàng",
-            });
-          }
-        }
-      };
-      fetchData();
-    }, [assignmentId])
-  );
 
   const handleCancelPickUp = async () => {
     try {

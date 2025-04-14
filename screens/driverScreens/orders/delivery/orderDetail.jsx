@@ -123,47 +123,6 @@ const OrderDetail = ({ navigation, route }) => {
     isLoadingConfirmDelivery,
   } = useOrderStore();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (assignmentId) {
-        try {
-          setDataLoaded(false);
-          await fetchAssignmentDetail(assignmentId);
-        } catch (error) {
-          console.error("Error fetching assignment details:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải thông tin đơn hàng",
-          });
-        }
-      }
-    };
-    fetchData();
-  }, [assignmentId]);
-
-  useEffect(() => {
-    const fetchOrderData = async () => {
-      if (assignmentDetail && assignmentDetail.orderId) {
-        try {
-          await fetchOrderDetail(assignmentDetail.orderId);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error("Error fetching order details:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải chi tiết đơn hàng",
-          });
-          setDataLoaded(true);
-        }
-      }
-    };
-    fetchOrderData();
-  }, [assignmentDetail]);
-
-  console.log("Assignment Detail:", orderDetail);
-
   useFocusEffect(
     useCallback(() => {
       const fetchData = async () => {
@@ -184,6 +143,26 @@ const OrderDetail = ({ navigation, route }) => {
       fetchData();
     }, [assignmentId])
   );
+
+  useEffect(() => {
+    const fetchOrderData = async () => {
+      if (assignmentDetail && assignmentDetail.orderId) {
+        try {
+          await fetchOrderDetail(assignmentDetail.orderId);
+          setDataLoaded(true);
+        } catch (error) {
+          console.error("Error fetching order details:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải chi tiết đơn hàng",
+          });
+          setDataLoaded(true);
+        }
+      }
+    };
+    fetchOrderData();
+  }, [assignmentDetail]);
 
   const handleCancelDelivery = async () => {
     try {
