@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,18 +7,117 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  RefreshControl,
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import useAuthStore from "../../../api/store/authStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import useCheckOrderStore from '../../../api/store/checkOrderStore';
 
 const { width } = Dimensions.get("window");
 
 export default function StaffrMenu({ navigation }) {
   const { userDetail } = useAuthStore();
   const [notificationCount, setNotificationCount] = useState(5);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const {
+    orderInstore, fetchOrderInstore,
+    orderChecking, fetchOrderChecking,
+    orderChecked, fetchOrderChecked,
+    orderWashing, fetchOrderWashing,
+    orderWashed, fetchOrderWashed
+  } = useCheckOrderStore();
+
+  const loadAllOrders = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchOrderInstore(),
+        fetchOrderChecking(),
+        fetchOrderChecked(),
+        fetchOrderWashing(),
+        fetchOrderWashed()
+      ]);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    await loadAllOrders();
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAllOrders();
+      
+      // Auto refresh every 30 seconds
+      const interval = setInterval(() => {
+        loadAllOrders();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }, [])
+  );
+
+  const menuItems = [
+    {
+      icon: "📋",
+      title: "Đơn Xử lý",
+      description: "Danh sách đơn hàng cần xử lý",
+      route: "OrderListScreen",
+      bgColor: "bg-emerald-500",
+      count: orderInstore?.length || 0
+    },
+    {
+      icon: "✓",
+      title: "Đơn Nhận Check",
+      description: "Danh sách đơn hàng nhận check",
+      route: "OrderCheckingListScreen",
+      bgColor: "bg-amber-500",
+      count: orderChecking?.length || 0
+    },
+    {
+      icon: "✓✓",
+      title: "Đơn Nhận Checked",
+      description: "Danh sách đơn hàng nhận checked",
+      route: "OrderCheckedListScreen",
+      bgColor: "bg-orange-500",
+      count: orderChecked?.length || 0
+    },
+    {
+      icon: "👕",
+      title: "Đơn nhận đang được giặt",
+      description: "Danh sách đơn hàng nhận đang được giặt",
+      route: "OrderWashingListScreen",
+      bgColor: "bg-blue-500",
+      count: orderWashing?.length || 0
+    },
+    {
+      icon: "💧",
+      title: "Đơn nhận đã giặt xong",
+      description: "Danh sách đơn hàng nhận đã giặt xong",
+      route: "OrderWashedListScreen",
+      bgColor: "bg-gray-500",
+      count: orderWashed?.length || 0
+    }
+  ];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={["#2FA060"]}
+          />
+        }
+      >
         {/* Header with greeting and notification icon */}
         <View style={styles.header}>
           <View
@@ -58,104 +157,35 @@ export default function StaffrMenu({ navigation }) {
         <View style={styles.mainContent}>
           <Text style={styles.sectionTitle}>Đơn hàng</Text>
 
-          {/* Order pickup section */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("OrderListScreen")}
-          >
-            <View
-              style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={() => navigation.navigate(item.route)}
             >
-              <Ionicons name="reader-outline" size={28} color="#fff" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Đơn Xử lý</Text>
-              <Text style={styles.menuDescription}>
-                Danh sách đơn hàng cần xử lý
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-          </TouchableOpacity>
-
-          {/* Order checking section */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("OrderCheckingListScreen")}
-          >
-            <View
-              style={[styles.iconBackground, { backgroundColor: "#FFA500" }]}
-            >
-              <Ionicons name="checkmark-done-outline" size={28} color="#fff" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Đơn Nhận Check</Text>
-              <Text style={styles.menuDescription}>
-                Danh sách đơn hàng nhận check
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-          </TouchableOpacity>
-
-          {/* Order checked section */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("OrderListCheckedScreen")}
-          >
-            <View
-              style={[styles.iconBackground, { backgroundColor: "#e67e22" }]}
-            >
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={28}
-                color="#fff"
-              />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Đơn Nhận Checked</Text>
-              <Text style={styles.menuDescription}>
-                Danh sách đơn hàng nhận checked
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-          </TouchableOpacity>
-
-          {/* Order washing section */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("OrderWashingListSceen")}
-          >
-            <View
-              style={[styles.iconBackground, { backgroundColor: "#2980b9" }]}
-            >
-              <Ionicons name="shirt-outline" size={28} color="#fff" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Đơn nhận đang được giặt</Text>
-              <Text style={styles.menuDescription}>
-                Danh sách đơn hàng nhận đang được giặt
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-          </TouchableOpacity>
-
-          {/* Order washed section */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("OrderWashedListScreen")}
-          >
-            <View
-              style={[styles.iconBackground, { backgroundColor: "#95a5a6" }]}
-            >
-              <Ionicons name="water-outline" size={28} color="#fff" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Đơn nhận đã giặt xong</Text>
-              <Text style={styles.menuDescription}>
-                Danh sách đơn hàng nhận đã giặt xong
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-          </TouchableOpacity>
+              <View className={`${item.bgColor} rounded-full items-center justify-center`} style={styles.iconBackground}>
+                <Text className="text-white text-xl">{item.icon}</Text>
+              </View>
+              <View style={styles.menuTextContainer}>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-lg font-semibold text-gray-800">
+                    {item.title}
+                  </Text>
+                  {item.count > 0 && (
+                    <View className={`${item.bgColor} px-3 py-1 rounded-full`}>
+                      <Text className="text-white font-bold">
+                        {item.count}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-sm text-gray-500 mt-1">
+                  {item.description}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -10,6 +10,46 @@ const useUserStore = create((set, get) => ({
   isLoading: false,
   error: null,
   userDetails: null,
+  
+  // Get user details by userId
+  getUserById: async (userId) => {
+    if (!userId) {
+      console.log("No userId provided to getUserById");
+      return null;
+    }
+
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosClient.get(`/users/${userId}`);
+      const userData = response.data;
+      
+      set({
+        user: userData,
+        isLoading: false
+      });
+      
+      return userData;
+    } catch (error) {
+      console.error("Failed to fetch user details", error.response || error);
+      
+      let errorMessage = "Failed to fetch user details";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "User not found";
+        } else {
+          errorMessage = error.response.data?.message || errorMessage;
+        }
+      }
+      
+      set({
+        isLoading: false,
+        error: errorMessage
+      });
+      
+      return null;
+    }
+  },
+  
   // Update user details
   updateUser: async (userId, updatedUser) => {
     if (!userId) {
