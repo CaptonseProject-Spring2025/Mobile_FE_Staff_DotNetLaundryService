@@ -133,6 +133,105 @@ const useCheckOrderStore = create((set) => ({
     }
   },
 
+  // Lịch sử trạng thái đơn hàng
+  orderHistory: [],
+  isLoadingOrderHistory: false,
+  orderHistoryError: null,
+  fetchOrderHistory: async (orderId) => {
+    if (!orderId) {
+      console.error("OrderId is required to fetch order history");
+      return;
+    }
+    
+    try {
+      set({ isLoadingOrderHistory: true, orderHistoryError: null });
+      const response = await axiosClient.get(`/orders/history/${orderId}`);
+      const historyData = response.data;
+      console.log("API returned history data:", historyData);
+      
+      // Nếu dữ liệu là chuỗi JSON, thử parse nó
+      if (typeof historyData === 'string') {
+        try {
+          const parsedData = JSON.parse(historyData);
+          console.log("Parsed history data:", parsedData);
+          set({ orderHistory: parsedData, isLoadingOrderHistory: false });
+          return parsedData;
+        } catch (e) {
+          console.error("Error parsing history data string:", e);
+          set({ orderHistory: [], isLoadingOrderHistory: false });
+          return [];
+        }
+      }
+      
+      // Nếu dữ liệu đã là object hoặc array
+      set({ orderHistory: historyData, isLoadingOrderHistory: false });
+      return historyData;
+    } catch (error) {
+      console.error("Error fetching order history:", error);
+      set({ 
+        orderHistoryError: error.response?.data?.message || error.message,
+        isLoadingOrderHistory: false 
+      });
+      return null;
+    }
+  },
+
+  // Thêm hàm để lấy hình ảnh đính kèm từ statusHistoryId
+  orderStatusPhotos: null,
+  isLoadingStatusPhotos: false,
+  statusPhotosError: null,
+  
+  fetchOrderStatusPhotos: async (statusHistoryId) => {
+    if (!statusHistoryId) {
+      console.error("statusHistoryId is required to fetch photos");
+      return null;
+    }
+    
+    console.log("Fetching photos for statusHistoryId:", statusHistoryId);
+    
+    try {
+      set({ isLoadingStatusPhotos: true, statusPhotosError: null });
+      
+      // Đúng URL như trong ảnh: https://laundry.vuhai.me/api/photos?statusHistoryId=d1fd7836-2650-4814-a178-68165233dd29
+      const response = await axiosClient.get(`photos?statusHistoryId=${statusHistoryId}`);
+      console.log("Status photos API response:", response.data);
+      
+      // Format dữ liệu trả về từ API
+      let formattedPhotos = [];
+      
+      // Nếu dữ liệu trả về là array
+      if (response.data && Array.isArray(response.data)) {
+        formattedPhotos = response.data;
+      } 
+      // Nếu dữ liệu trả về là object duy nhất
+      else if (response.data && typeof response.data === 'object') {
+        formattedPhotos = [response.data];
+      }
+      // Nếu dữ liệu trả về là string (có thể là JSON string)
+      else if (response.data && typeof response.data === 'string') {
+        try {
+          const parsedData = JSON.parse(response.data);
+          formattedPhotos = Array.isArray(parsedData) ? parsedData : [parsedData];
+        } catch (e) {
+          console.error("Error parsing photos data string:", e);
+        }
+      }
+      
+      console.log("Formatted photos:", formattedPhotos);
+      
+      // Lưu kết quả vào store
+      set({ orderStatusPhotos: formattedPhotos, isLoadingStatusPhotos: false });
+      return formattedPhotos;
+    } catch (error) {
+      console.error("Error fetching status photos:", error);
+      set({ 
+        statusPhotosError: error.response?.data?.message || error.message,
+        isLoadingStatusPhotos: false 
+      });
+      return null;
+    }
+  },
+
 }));
 
 export default useCheckOrderStore;

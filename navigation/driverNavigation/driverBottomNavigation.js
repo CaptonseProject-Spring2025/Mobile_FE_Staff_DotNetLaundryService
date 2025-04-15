@@ -6,6 +6,7 @@ import {
   DriverUserScreen,
   DriverNotificationScreen,
   DriverAccountScreen,
+  DriverChatScreen,
 } from "./driverNavigation.js";
 import Octicons from "react-native-vector-icons/Octicons";
 const Tab = createBottomTabNavigator();
@@ -52,7 +53,7 @@ const DriverBottomNavigationTab = () => {
       />
       <Tab.Screen
         name="Inbox"
-        component={DriverHomeScreen}
+        component={DriverChatScreen}
         options={{
           headerShown: false,
         }}
