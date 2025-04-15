@@ -21,11 +21,6 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 const ConfirmList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [currentOrderId, setCurrentOrderId] = useState(null);
-  const [images, setImages] = useState([]);
-  const navigation = useNavigation();
   const {
     assignmentList,
     isLoadingOrderList,
@@ -33,6 +28,8 @@ const ConfirmList = ({ searchQuery = "" }) => {
     isLoadingRevicedPickUp,
     revicedPickUp,
     revicedPickUpError,
+    finishDelivery,
+    isLoadingFinishDelivery,
   } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
 
@@ -51,8 +48,8 @@ const ConfirmList = ({ searchQuery = "" }) => {
       setFilteredOrders(
         assignmentList.filter(
           (order) =>
-            order.status === "ASSIGNED_PICKUP" &&
-            order.currentStatus === "PICKEDUP"
+            (order.status === "ASSIGNED_PICKUP" && order.currentStatus === "PICKEDUP") ||
+            (order.status === "ASSIGNED_DELIVERY" && order.currentStatus === "DELIVERED")
         )
       );
     }
@@ -83,6 +80,23 @@ const ConfirmList = ({ searchQuery = "" }) => {
       console.log("Error status:", error?.response?.status);
     }
   };
+
+  const handleConfirmDelivery = async (orderId) => {
+    try {
+      await finishDelivery(orderId);
+
+      Toast.show({
+        type: "success",
+        text1: "Xác nhận thành công",
+        text2: "Đơn hàng đã được xác nhận.",
+      });
+      fetchAssignmentList();
+    } catch (error) {
+      Alert.alert("Lỗi", error?.response?.data);
+      console.log("Error message:", error?.message);
+      console.log("Error status:", error?.response?.status);
+    }
+  }
 
   if (isLoadingOrderList) {
     return (
@@ -168,22 +182,30 @@ const ConfirmList = ({ searchQuery = "" }) => {
           </View>
         </View>
 
-        {/* Button Xác nhận lấy hàng */}
+        {/* Button Xác nhận lấy hàng hoặc giao hàng */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
               styles.confirmButton,
               { backgroundColor: "#1E88E5" },
-              isLoadingRevicedPickUp && { opacity: 0.7 },
+              (isLoadingRevicedPickUp || isLoadingFinishDelivery) && { opacity: 0.7 },
             ]}
-            onPress={() => handleConfirmPickup(item.orderId)}
-            disabled={isLoadingRevicedPickUp}
+            onPress={() => {
+              if (item.status === "ASSIGNED_PICKUP" && item.currentStatus === "PICKEDUP") {
+                handleConfirmPickup(item.orderId);
+              } else if (item.status === "ASSIGNED_DELIVERY" && item.currentStatus === "DELIVERED") {
+                handleConfirmDelivery(item.orderId);
+              }
+            }}
+            disabled={isLoadingRevicedPickUp || isLoadingFinishDelivery}
           >
-            {isLoadingRevicedPickUp ? (
+            {isLoadingRevicedPickUp || isLoadingFinishDelivery ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonTextStyle}>
-                Xác nhận đơn hàng đã lấy
+                {item.status === "ASSIGNED_PICKUP" && item.currentStatus === "PICKEDUP"
+                  ? "Xác nhận đơn hàng đã lấy"
+                  : "Xác nhận đơn hàng đã giao"}
               </Text>
             )}
           </TouchableOpacity>

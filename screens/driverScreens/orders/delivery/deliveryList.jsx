@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -39,9 +39,11 @@ const DeliveryList = ({ searchQuery = "" }) => {
   const [images, setImages] = useState([]);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    fetchAssignmentList();
-  }, [fetchAssignmentList]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAssignmentList();
+    }, [])
+  );
 
   useEffect(() => {
     if (assignmentList) {
@@ -55,15 +57,21 @@ const DeliveryList = ({ searchQuery = "" }) => {
       );
     }
   }, [assignmentList]);
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simulate a network request
-    setTimeout(() => {
+    try {
+      await fetchAssignmentList();
+    } catch (error) {
+      console.error("Error refreshing assignment list:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách đơn hàng",
+      });
+    } finally {
       setRefreshing(false);
-    }, 2000);
+    }
   };
-
   const handleCancelDelivery = async () => {
     try {
       // Check if orderId exists
@@ -134,6 +142,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
   };
 
   const handleDelivery = async (assignmentId, orderId) => {
+    console.log("check orderID, assignmentId", orderId, assignmentId);
     try {
       const response = await startDelivery(orderId);
       if (response && response.status === 200) {
@@ -141,7 +150,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
           assignmentId: assignmentId,
         });
       }
-      console.log("Pick up response:", response.status);
+      console.log("delivery response:", response.status);
     } catch (error) {
       console.error("Error picking up order:", error);
       const errorMessage =
@@ -626,7 +635,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 5,
-    overflow: "hidden" 
+    overflow: "hidden",
   },
   imagesScrollContainer: {
     paddingVertical: 5,

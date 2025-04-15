@@ -41,16 +41,11 @@ const PickupList = ({ searchQuery = "" }) => {
   } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
 
-  useEffect(() => {
-    fetchAssignmentList();
-  }, [fetchAssignmentList]);
-
   useFocusEffect(
     useCallback(() => {
       fetchAssignmentList();
-    }, [fetchAssignmentList])
+    }, [])
   );
-
   useEffect(() => {
     if (assignmentList) {
       setFilteredOrders(

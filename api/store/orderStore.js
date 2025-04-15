@@ -147,7 +147,7 @@ const useOrderStore = create((set) => ({
         `/driver/start-delivery?orderId=${orderId}`
       );
       set({ isLoadingStartDelivery: false });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error starting delivery:", error);
       set({ startDeliveryError: error.message, isLoadingStartDelivery: false });
@@ -200,11 +200,11 @@ const useOrderStore = create((set) => ({
 
   isLoadingFinishDelivery: false,
   finishDeliveryError: null,
-  finishDelivery: async () => {
+  finishDelivery: async (orderId) => {
     try {
       set({ isLoadingFinishDelivery: true, finishDeliveryError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-finish-delivery`
+        `driver/confirm-delivery-success?orderId=${orderId}`
       );
       set({ isLoadingFinishDelivery: false });
       return response.data;
