@@ -11,12 +11,15 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
 import useOrderStore from "../../../../api/store/orderStore";
 import { useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import Toast from "react-native-toast-message";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -168,12 +171,10 @@ const OrderDetail = ({ navigation, route }) => {
   const handleCancelDelivery = async () => {
     try {
       // Check if orderId exists
-      if (!currentOrderId) {
-        return Alert.alert(
-          "Lỗi",
-          "Không tìm thấy mã đơn hàng. Vui lòng thử lại.",
-          [{ text: "OK" }]
-        );
+      if (!assignmentDetail.orderId) {
+        return Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng", [
+          { text: "OK" },
+        ]);
       }
 
       // Validate image requirement
@@ -194,7 +195,7 @@ const OrderDetail = ({ navigation, route }) => {
 
       // Create form data with proper structure
       const formData = new FormData();
-      formData.append("orderId", currentOrderId);
+      formData.append("orderId", assignmentDetail.orderId);
       formData.append("reason", cancelReason);
 
       // Append image with proper structure for FormData
@@ -209,11 +210,11 @@ const OrderDetail = ({ navigation, route }) => {
         type: imageType,
       });
 
+      setCancelModalVisible(false);
       // Send the request
-      await cancelPickUp(formData);
+      await cancelDelivery(formData);
 
       // Close modal and show success toast
-      setCancelModalVisible(false);
       setCancelReason("");
       setImages([]);
 
@@ -221,9 +222,7 @@ const OrderDetail = ({ navigation, route }) => {
         type: "success",
         text1: "Đã hủy xác nhận lấy hàng.",
       });
-
-      // Refresh list
-      fetchAssignmentList();
+      navigation.goBack();
     } catch (error) {
       console.log("Cancel pick up error:", error);
       Alert.alert(
@@ -236,11 +235,10 @@ const OrderDetail = ({ navigation, route }) => {
 
   const handleConfirmDelivery = async () => {
     try {
-      // Validate image requirement
       if (!images || images.length === 0) {
         return Alert.alert(
           "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh xác nhận lấy hàng",
+          "Vui lòng gửi ít nhất một ảnh xác nhận giao hàng",
           [{ text: "OK" }]
         );
       }
@@ -251,7 +249,6 @@ const OrderDetail = ({ navigation, route }) => {
           { text: "OK" },
         ]);
       }
-
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
@@ -272,7 +269,6 @@ const OrderDetail = ({ navigation, route }) => {
       setCompleteModalVisible(false);
       // Call the API
       await confirmDelivery(formData);
-
       // Close modal and reset values
       setCompleteNote("");
       setImages([]);
@@ -289,7 +285,7 @@ const OrderDetail = ({ navigation, route }) => {
       // Show specific validation errors if available
       const errorMsg = error.response?.data?.errors?.notes
         ? error.response.data.errors.notes[0]
-        : confirmPickUpError || "Không thể xác nhận lấy hàng";
+        : "Không thể xác nhận lấy hàng";
 
       Toast.show({
         type: "error",
@@ -356,12 +352,51 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
+            <TouchableOpacity
+              style={styles.imagePickerButton}
+              onPress={pickImage}
+            >
+              <Ionicons name="image" size={24} color="#63B35C" />
+              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+            </TouchableOpacity>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+              )}
+            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
                 onPress={() => {
                   setCancelModalVisible(false);
                   setCancelReason("");
+                  setImages([]);
                 }}
               >
                 <Text style={styles.buttonCancelText}>Đóng</Text>
@@ -369,8 +404,94 @@ const OrderDetail = ({ navigation, route }) => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonConfirm]}
                 onPress={() => {
-                  console.log("Order canceled with reason:", cancelReason);
+                  handleCancelDelivery();
                   setCancelModalVisible(false);
+                  setCancelReason("");
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonConfirmText}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Complete Order Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={completeModalVisible}
+        onRequestClose={() => setCompleteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.centeredView}
+        >
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Xác nhận hoàn thành đơn</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Nhập ghi chú (nếu có)"
+              value={completeNote}
+              onChangeText={setCompleteNote}
+              multiline={true}
+              numberOfLines={4}
+              mode="outlined"
+            />
+            <TouchableOpacity
+              style={styles.imagePickerButton}
+              onPress={pickImage}
+            >
+              <Ionicons name="image-outline" size={24} color="#63B35C" />
+              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+            </TouchableOpacity>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+              )}
+            </View>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonCancel]}
+                onPress={() => {
+                  setCompleteModalVisible(false);
+                  setCompleteNote("");
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonCancelText}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonConfirm]}
+                onPress={() => {
+                  handleConfirmDelivery();
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -648,17 +769,35 @@ const OrderDetail = ({ navigation, route }) => {
       </ScrollView>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
+          style={[
+            styles.button,
+            styles.cancelButton,
+            isLoadingCancelDelivery && { backgroundColor: "#6c757d" },
+          ]}
           onPress={() => setCancelModalVisible(true)}
+          disabled={isLoadingCancelDelivery}
         >
-          <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          {isLoadingCancelDelivery ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.completeButton]}
-          onPress={() => console.log("Complete order")}
+          style={[
+            styles.button,
+            styles.completeButton,
+            isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
+          ]}
+          onPress={() => setCompleteModalVisible(true)}
+          disabled={isLoadingConfirmDelivery}
         >
-          <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+          {isLoadingConfirmDelivery ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -825,7 +964,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalView: {
     margin: 20,
@@ -841,6 +980,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    width: "80%",
   },
   modalTitle: {
     fontSize: 18,
@@ -849,7 +989,27 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 100,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
+  },
+  imagePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  imagePickerButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#555",
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
     marginBottom: 15,
   },
   modalButtonContainer: {
@@ -877,6 +1037,44 @@ const styles = StyleSheet.create({
   buttonConfirmText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  imagePreviewContainer: {
+    width: 250,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 5,
+  },
+  imagesScrollContainer: {
+    flexDirection: "row",
+    paddingVertical: 2,
+    paddingHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  imageWrapper: {
+    width: 120,
+    height: 120,
+    position: "relative",
+    marginRight: 10,
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    backgroundColor: "white",
+    borderRadius: 12,
   },
   userInfoContainer: {
     backgroundColor: "#fff",

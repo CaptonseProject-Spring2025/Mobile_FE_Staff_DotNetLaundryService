@@ -156,11 +156,17 @@ const useOrderStore = create((set) => ({
 
   isLoadingConfirmDelivery: false,
   confirmDeliveryError: null,
-  confirmDelivery: async (orderId, note) => {
+  confirmDelivery: async (formData) => {
     try {
       set({ isLoadingConfirmDelivery: true, confirmDeliveryError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-delivered?orderId=${orderId}&notes=${note}`
+        `/driver/confirm-delivered`,
+         formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       set({ isLoadingConfirmDelivery: false });
       return response.data;

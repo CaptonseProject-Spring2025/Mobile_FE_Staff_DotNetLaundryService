@@ -108,9 +108,8 @@ const DeliveryList = ({ searchQuery = "" }) => {
         type: imageType,
       });
 
-
       // Send the request
-      await cancelPickUp(formData); 
+      await cancelPickUp(formData);
 
       // Close modal and show success toast
       setCancelModalVisible(false);
@@ -171,6 +170,39 @@ const DeliveryList = ({ searchQuery = "" }) => {
       } else if (result.uri) {
         setImages([...images, result.uri]);
       }
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log("Trạng thái quyền camera:", status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    console.log("Kết quả từ camera:", result);
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
     }
   };
 
@@ -348,13 +380,22 @@ const DeliveryList = ({ searchQuery = "" }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image" size={24} color="#63B35C" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
                 <ScrollView
@@ -507,7 +548,7 @@ const styles = StyleSheet.create({
     margin: 20,
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 35,
+    padding: 25,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -585,33 +626,34 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 5,
+    overflow: "hidden" 
   },
   imagesScrollContainer: {
-    flexDirection: "row",
-    paddingVertical: 2,
-    paddingHorizontal: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    justifyContent: "flex-start",
   },
   imageWrapper: {
-    width: 120,
-    height: 120,
+    width: 250,
+    height: 150,
     position: "relative",
-    marginRight: 10,
+    marginRight: 12,
+    borderRadius: 8,
   },
   imagePreview: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
   },
   removeImageButton: {
     position: "absolute",
-    top: -10,
-    right: -10,
+    top: 5,
+    right: 5,
     backgroundColor: "white",
     borderRadius: 12,
+    zIndex: 1,
   },
 });
 
