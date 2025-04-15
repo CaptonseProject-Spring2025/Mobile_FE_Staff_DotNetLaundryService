@@ -894,11 +894,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
   paymentOptionNew: {
     padding: 15,
     alignItems: "center",
