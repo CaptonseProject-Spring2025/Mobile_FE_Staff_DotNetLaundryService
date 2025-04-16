@@ -1,47 +1,40 @@
 import React, { useState } from "react";
-import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
+import {
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Text,
+  StatusBar,
+} from "react-native";
 import { WebView } from "react-native-webview";
 import Toast from "react-native-toast-message";
 
 const PayosWebView = ({ navigation, route }) => {
-  const { checkoutUrl, orderId, returnToScreen, assignmentId } = route.params;
+  const { checkoutUrl, returnToScreen, assignmentId } = route.params;
   const [loading, setLoading] = useState(true);
 
-  // Handle navigation state changes to detect payment completion
   const handleNavigationStateChange = (navState) => {
     // Check if the URL contains success indicators
-    if (
-      navState.url.includes("payment_success") ||
-      navState.url.includes("status=success")
-    ) {
+    if (navState.url.includes("status=PAID")) {
       Toast.show({
-        type: "success",
-        text1: "Thanh toán thành công",
-        text2: "Đơn hàng đã được thanh toán",
+        type: "info",
+        text1: "Thanh toán đã bị hủy",
+        text2: "Giao dịch không được hoàn thành",
       });
-
-      // Navigate back to the order detail screen
       if (returnToScreen === "OrderDetail") {
-        navigation.navigate("DriverDeliveryOrderDetailScreen", {
-          assignmentId: assignmentId,
-          paymentSuccess: true,
+        navigation.navigate("DriverHome", {
+          screen: "Trang chủ",
+          params: {
+            screen: "DriverDeliveryOrderDetailScreen",
+            params: {
+              assignmentId: assignmentId,
+              paymentSuccess: true,
+            },
+          },
         });
       } else {
         navigation.goBack();
       }
-    }
-
-    // Check if the URL contains failure indicators
-    if (
-      navState.url.includes("payment_failed") ||
-      navState.url.includes("status=failed")
-    ) {
-      Toast.show({
-        type: "error",
-        text1: "Thanh toán thất bại",
-        text2: "Vui lòng thử lại sau",
-      });
-      navigation.goBack();
     }
 
     // Check if the URL contains cancellation indicators
@@ -52,9 +45,15 @@ const PayosWebView = ({ navigation, route }) => {
         text2: "Giao dịch không được hoàn thành",
       });
       if (returnToScreen === "OrderDetail") {
-        navigation.navigate("DriverDeliveryOrderDetailScreen", {
-          assignmentId: assignmentId,
-          paymentSuccess: false,
+        navigation.navigate("DriverHome", {
+          screen: "Trang chủ",
+          params: {
+            screen: "DriverDeliveryOrderDetailScreen",
+            params: {
+              assignmentId: assignmentId,
+              paymentSuccess: false,
+            },
+          },
         });
       } else {
         navigation.goBack();
@@ -86,6 +85,9 @@ const PayosWebView = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 5,
+    marginTop: StatusBar.currentHeight || 0,
+    marginBottom: 10,
   },
   webView: {
     flex: 1,

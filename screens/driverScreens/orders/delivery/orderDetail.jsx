@@ -289,7 +289,7 @@ const OrderDetail = ({ navigation, route }) => {
         text1: "Đơn hàng đã hoàn thành",
         text2: "Xác nhận lấy hàng thành công",
       });
-      navigation.goBack();
+      navigation.navigate("DriverDeliveryScreen");
     } catch (error) {
       console.error("Error confirming pick up:", error);
 
@@ -330,10 +330,7 @@ const OrderDetail = ({ navigation, route }) => {
       // Create form data for the payment request
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
-      formData.append(
-        "description",
-        `Thanh toán ${assignmentDetail.orderId}`
-      );
+      formData.append("description", `Đơn hàng ${assignmentDetail.orderId}`);
 
       // Call API to create payment
       const response = await createPayment(formData);

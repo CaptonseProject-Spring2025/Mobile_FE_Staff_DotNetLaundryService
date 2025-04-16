@@ -12,7 +12,8 @@ import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confi
 import UserListScreen from "../../screens/driverScreens/chat/UserListScreen.jsx";
 import ChatScreen from "../../screens/driverScreens/chat/ChatScreen.jsx";
 import PayosWebView from "../../screens/driverScreens/orders/payment/payosWebView.jsx";
-
+import { TouchableOpacity, Text } from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -45,11 +46,19 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="DriverDeliveryOrderDetailScreen"
         component={OrderDetail}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverDeliveryScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="AddressNavigateMap"
@@ -85,13 +94,6 @@ export function DriverHomeScreen() {
           headerTitle: "Xác nhận đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
-      />
-      <Stack.Screen
-        name="PayosWebView"
-        component={PayosWebView}
-        options={{
-          headerShown: false,
         }}
       />
     </Stack.Navigator>
