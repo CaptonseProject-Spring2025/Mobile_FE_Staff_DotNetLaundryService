@@ -20,6 +20,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
+import usePaymentStore from "../../../../api/store/paymentStore";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -126,6 +127,16 @@ const OrderDetail = ({ navigation, route }) => {
     confirmDelivery,
     isLoadingConfirmDelivery,
   } = useOrderStore();
+  const { createPayment, isLoadingPayment } = usePaymentStore();
+  const [paymentSuccess, setPaymentSuccess] = useState(
+    route.params?.paymentSuccess || false
+  );
+
+  useEffect(() => {
+    if (route.params?.paymentSuccess) {
+      setPaymentSuccess(true);
+    }
+  }, [route.params?.paymentSuccess]);
 
   useFocusEffect(
     useCallback(() => {
@@ -311,6 +322,44 @@ const OrderDetail = ({ navigation, route }) => {
       } else if (result.uri) {
         setImages([...images, result.uri]);
       }
+    }
+  };
+
+  const handleMakePayment = async () => {
+    try {
+      // Create form data for the payment request
+      const formData = new FormData();
+      formData.append("orderId", assignmentDetail.orderId);
+      formData.append(
+        "description",
+        `Thanh toán ${assignmentDetail.orderId}`
+      );
+
+      // Call API to create payment
+      const response = await createPayment(formData);
+
+      if (response && response.data && response.data.checkoutUrl) {
+        // Navigate to PayOS WebView with the checkout URL
+        navigation.navigate("PayosWebView", {
+          checkoutUrl: response.data.checkoutUrl,
+          orderId: assignmentDetail.orderId,
+          returnToScreen: "OrderDetail",
+          assignmentId: assignmentId,
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không thể tạo liên kết thanh toán",
+        });
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi thanh toán",
+        text2: error.message || "Đã xảy ra lỗi khi tạo thanh toán",
+      });
     }
   };
 
@@ -784,21 +833,39 @@ const OrderDetail = ({ navigation, route }) => {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.completeButton,
-            isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
-          ]}
-          onPress={() => setCompleteModalVisible(true)}
-          disabled={isLoadingConfirmDelivery}
-        >
-          {isLoadingConfirmDelivery ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
-          )}
-        </TouchableOpacity>
+        {selectedPayment === "cash" || paymentSuccess ? (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.completeButton,
+              isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={() => setCompleteModalVisible(true)}
+            disabled={isLoadingConfirmDelivery}
+          >
+            {isLoadingConfirmDelivery ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.completeButton,
+              isLoadingPayment && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={handleMakePayment}
+            disabled={isLoadingPayment}
+          >
+            {isLoadingPayment ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.completeButtonText}>Thanh toán</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );

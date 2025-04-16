@@ -9,8 +9,10 @@ import AddressNavigateMap from "../../screens/driverScreens/orders/pickup/addres
 import OrderPickupDetail from "../../screens/driverScreens/orders/pickup/orderPickupDetail.jsx";
 import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/delivery/addressDeliveryNavigation.jsx";
 import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confirmPickup.jsx";
-import UserListScreen from '../../screens/driverScreens/chat/UserListScreen.jsx';
-import ChatScreen from '../../screens/driverScreens/chat/ChatScreen.jsx';
+import UserListScreen from "../../screens/driverScreens/chat/UserListScreen.jsx";
+import ChatScreen from "../../screens/driverScreens/chat/ChatScreen.jsx";
+import PayosWebView from "../../screens/driverScreens/orders/payment/payosWebView.jsx";
+
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -85,6 +87,13 @@ export function DriverHomeScreen() {
           headerStyle: { height: 100 },
         }}
       />
+      <Stack.Screen
+        name="PayosWebView"
+        component={PayosWebView}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -108,11 +117,19 @@ export function DriverStatisticScreen() {
 export function DriverChatScreen() {
   return (
     <Stack.Navigator initialRouteName="UserListScreen">
-      <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }}/>
-      <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+      <Stack.Screen
+        name="UserListScreen"
+        component={UserListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{
           headerTitle: "Trò chuyện",
           headerTitleAlign: "center",
-        }}/>
+        }}
+      />
     </Stack.Navigator>
   );
 }

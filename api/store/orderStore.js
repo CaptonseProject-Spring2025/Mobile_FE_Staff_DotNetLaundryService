@@ -122,7 +122,6 @@ const useOrderStore = create((set) => ({
           },
         }
       );
-      console.log("Cancel pickup response:", response);
       set({ isLoadingCancelPickUp: false });
       return response;
     } catch (error) {
