@@ -650,13 +650,9 @@ const OrderDetail = ({ navigation, route }) => {
         <View style={styles.sectionDivider} />
         {/* User Information Section */}
         <View>
-          <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>
-            Thông tin khách hàng
-          </Text>
-          <Divider style={{ marginVertical: 10 }} />
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfoHeader}>
-              <Text style={styles.userInfoTitle}>Thông tin liên hệ</Text>
+              <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
               <TouchableOpacity style={styles.chatButton}>
                 <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
                 <Text style={styles.chatButtonText}>Nhắn tin</Text>
