@@ -12,6 +12,7 @@ import {
   TextInput,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
@@ -221,26 +222,29 @@ const OrderDetail = ({ navigation, route }) => {
         type: imageType,
       });
 
+      // Close modal BEFORE sending the request
       setCancelModalVisible(false);
+
       // Send the request
       await cancelDelivery(formData);
 
-      // Close modal and show success toast
+      // Reset form state
       setCancelReason("");
       setImages([]);
 
+      // Show success toast with correct message
       Toast.show({
         type: "success",
-        text1: "Đã hủy xác nhận lấy hàng.",
+        text1: "Đã hủy giao hàng thành công.",
       });
+
+      // Navigate back
       navigation.goBack();
     } catch (error) {
-      console.log("Cancel pick up error:", error);
-      Alert.alert(
-        "Lỗi",
-        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
-        [{ text: "OK" }]
-      );
+      console.log("Cancel delivery error:", error);
+
+      // Fixed error message - removed undefined variable
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi hủy giao hàng.", [{ text: "OK" }]);
     }
   };
 
@@ -325,6 +329,39 @@ const OrderDetail = ({ navigation, route }) => {
     }
   };
 
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log("Trạng thái quyền camera:", status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    console.log("Kết quả từ camera:", result);
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
+    }
+  };
+
   const handleMakePayment = async () => {
     try {
       // Create form data for the payment request
@@ -398,13 +435,22 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image" size={24} color="#63B35C" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
                 <ScrollView
@@ -449,12 +495,7 @@ const OrderDetail = ({ navigation, route }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonConfirm]}
-                onPress={() => {
-                  handleCancelDelivery();
-                  setCancelModalVisible(false);
-                  setCancelReason("");
-                  setImages([]);
-                }}
+                onPress={handleCancelDelivery}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
               </TouchableOpacity>
@@ -485,13 +526,22 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image-outline" size={24} color="#63B35C" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
                 <ScrollView
@@ -520,7 +570,10 @@ const OrderDetail = ({ navigation, route }) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
               )}
             </View>
             <View style={styles.modalButtonContainer}>
@@ -1103,33 +1156,34 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 5,
+    overflow: "hidden",
   },
   imagesScrollContainer: {
-    flexDirection: "row",
-    paddingVertical: 2,
-    paddingHorizontal: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    justifyContent: "flex-start",
   },
   imageWrapper: {
-    width: 120,
-    height: 120,
+    width: 250,
+    height: 150,
     position: "relative",
-    marginRight: 10,
+    marginRight: 12,
+    borderRadius: 8,
   },
   imagePreview: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
   },
   removeImageButton: {
     position: "absolute",
-    top: -10,
-    right: -10,
+    top: 5,
+    right: 5,
     backgroundColor: "white",
     borderRadius: 12,
+    zIndex: 1,
   },
   userInfoContainer: {
     backgroundColor: "#fff",

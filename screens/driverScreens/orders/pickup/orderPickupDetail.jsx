@@ -59,7 +59,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
               text1: "Lỗi",
               text2: "Không thể tải thông tin đơn hàng",
             });
-            setDataLoaded(true); 
+            setDataLoaded(true);
           }
         }
       };
@@ -86,7 +86,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
     };
     fetchOrderData();
   }, [assignmentDetail]);
-
 
   const handleCancelPickUp = async () => {
     try {
@@ -168,6 +167,39 @@ const OrderPickupDetail = ({ navigation, route }) => {
       } else if (result.uri) {
         setImages([...images, result.uri]);
       }
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log("Trạng thái quyền camera:", status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    console.log("Kết quả từ camera:", result);
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
     }
   };
 
@@ -275,13 +307,22 @@ const OrderPickupDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image" size={24} color="#63B35C" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
                 <ScrollView
@@ -310,7 +351,10 @@ const OrderPickupDetail = ({ navigation, route }) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
               )}
             </View>
             <View style={styles.modalButtonContainer}>
@@ -362,13 +406,22 @@ const OrderPickupDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              <Ionicons name="image-outline" size={24} color="#63B35C" />
-              <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-            </TouchableOpacity>
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.imagePreviewContainer}>
               {images.length > 0 ? (
                 <ScrollView
@@ -397,7 +450,10 @@ const OrderPickupDetail = ({ navigation, route }) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
               )}
             </View>
             <View style={styles.modalButtonContainer}>
@@ -525,7 +581,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
           </View>
         </View>
         <View style={styles.sectionDivider} />
-        
+
         {/* User Information Section */}
         <View>
           <View style={styles.userInfoContainer}>
@@ -552,7 +608,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.sectionDivider} />
         {/* Location section */}
         <View>
@@ -886,40 +942,43 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   imagePreviewContainer: {
-    width: "100%",
-    minHeight: 120,
+    width: 250,
+    height: 180,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    padding: 10,
+    padding: 5,
+    overflow: "hidden",
   },
   imagesScrollContainer: {
-    flexDirection: "row",
     paddingVertical: 5,
-    paddingHorizontal: 5,
-    gap: 10,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
   imageWrapper: {
-    width: 120,
-    height: 120,
+    width: 250,
+    height: 150,
     position: "relative",
-    marginRight: 10,
+    marginRight: 12,
+    borderRadius: 8,
   },
   imagePreview: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
   },
   removeImageButton: {
     position: "absolute",
-    top: -10,
-    right: -10,
+    top: 5,
+    right: 5,
     backgroundColor: "white",
     borderRadius: 12,
+    zIndex: 1,
   },
   userInfoContainer: {
     backgroundColor: "#fff",
