@@ -126,9 +126,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
         name: imageName,
         type: imageType,
       });
-
-      console.log("Form data for cancel pick up:", formData);
-
       // Send the request
       await cancelPickUp(formData);
 
@@ -172,7 +169,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
 
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    console.log("Trạng thái quyền camera:", status);
 
     if (status !== "granted") {
       Alert.alert(
@@ -188,7 +184,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
       quality: 1,
     });
 
-    console.log("Kết quả từ camera:", result);
 
     if (result.canceled) {
       console.log("Người dùng đã hủy chụp ảnh.");
@@ -372,9 +367,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
                 style={[styles.modalButton, styles.buttonConfirm]}
                 onPress={() => {
                   handleCancelPickUp();
-                  setCancelModalVisible(false);
-                  setCancelReason("");
-                  setImages([]);
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -399,7 +391,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
             <Text style={styles.modalTitle}>Xác nhận hoàn thành đơn</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Nhập ghi chú (nếu có)"
+              placeholder="Nhập ghi chú"
               value={completeNote}
               onChangeText={setCompleteNote}
               multiline={true}

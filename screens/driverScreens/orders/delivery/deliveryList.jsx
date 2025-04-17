@@ -433,7 +433,10 @@ const DeliveryList = ({ searchQuery = "" }) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
               )}
             </View>
             <View style={styles.modalButtonContainer}>

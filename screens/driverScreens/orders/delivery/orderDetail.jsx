@@ -479,7 +479,10 @@ const OrderDetail = ({ navigation, route }) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={{ color: "#777" }}>Chưa có ảnh</Text>
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
               )}
             </View>
             <View style={styles.modalButtonContainer}>
@@ -519,7 +522,7 @@ const OrderDetail = ({ navigation, route }) => {
             <Text style={styles.modalTitle}>Xác nhận hoàn thành đơn</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Nhập ghi chú (nếu có)"
+              placeholder="Nhập ghi chú"
               value={completeNote}
               onChangeText={setCompleteNote}
               multiline={true}
