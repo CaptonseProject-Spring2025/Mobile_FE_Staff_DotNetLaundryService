@@ -17,9 +17,9 @@ const PayosWebView = ({ navigation, route }) => {
     // Check if the URL contains success indicators
     if (navState.url.includes("status=PAID")) {
       Toast.show({
-        type: "info",
-        text1: "Thanh toán đã bị hủy",
-        text2: "Giao dịch không được hoàn thành",
+        type: "success",
+        text1: "Thanh toán thành công",
+        text2: "Giao dịch hoàn thành",
       });
       if (returnToScreen === "OrderDetail") {
         navigation.navigate("DriverHome", {

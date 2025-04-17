@@ -22,7 +22,7 @@ function ChatScreen() {
   // Chỉ tạo connection 1 lần
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl("https://laundryserviceapi.azurewebsites.net/chatHub")
+      .withUrl("https://laundry.vuhai.me/chatHub")
       .build();
 
     newConnection

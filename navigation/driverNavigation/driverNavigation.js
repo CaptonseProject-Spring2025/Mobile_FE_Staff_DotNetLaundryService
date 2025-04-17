@@ -28,20 +28,36 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="DriverPickupScreen"
         component={PickupScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Đơn nhận hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="DriverDeliveryScreen"
         component={DeliveryScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Đơn giao hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="DriverDeliveryOrderDetailScreen"
@@ -81,11 +97,19 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="DriverOrderPickupDetailScreen"
         component={OrderPickupDetail}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverPickupScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="ConfirmPickup"
@@ -114,8 +138,6 @@ export function DriverStatisticScreen() {
 }
 
 //man hinh chat
-//màn hình chat
-
 export function DriverChatScreen() {
   return (
     <Stack.Navigator initialRouteName="UserListScreen">

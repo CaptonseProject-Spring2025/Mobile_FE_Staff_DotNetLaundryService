@@ -821,7 +821,7 @@ const OrderDetail = ({ navigation, route }) => {
             isLoadingCancelDelivery && { backgroundColor: "#6c757d" },
           ]}
           onPress={() => setCancelModalVisible(true)}
-          disabled={isLoadingCancelDelivery}
+          disabled={isLoadingCancelDelivery || paymentSuccess}
         >
           {isLoadingCancelDelivery ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
