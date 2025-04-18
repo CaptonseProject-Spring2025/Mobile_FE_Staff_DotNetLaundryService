@@ -11,11 +11,17 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  Image,
+  Alert,
 } from "react-native";
-import { Divider, Avatar } from "react-native-paper";
+import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
 import useOrderStore from "../../../../api/store/orderStore";
 import { useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Toast from "react-native-toast-message";
+import usePaymentStore from "../../../../api/store/paymentStore";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -122,47 +128,16 @@ const OrderDetail = ({ navigation, route }) => {
     confirmDelivery,
     isLoadingConfirmDelivery,
   } = useOrderStore();
+  const { createPayment, isLoadingPayment } = usePaymentStore();
+  const [paymentSuccess, setPaymentSuccess] = useState(
+    route.params?.paymentSuccess || false
+  );
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (assignmentId) {
-        try {
-          setDataLoaded(false);
-          await fetchAssignmentDetail(assignmentId);
-        } catch (error) {
-          console.error("Error fetching assignment details:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải thông tin đơn hàng",
-          });
-        }
-      }
-    };
-    fetchData();
-  }, [assignmentId]);
-
-  useEffect(() => {
-    const fetchOrderData = async () => {
-      if (assignmentDetail && assignmentDetail.orderId) {
-        try {
-          await fetchOrderDetail(assignmentDetail.orderId);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error("Error fetching order details:", error);
-          Toast.show({
-            type: "error",
-            text1: "Lỗi",
-            text2: "Không thể tải chi tiết đơn hàng",
-          });
-          setDataLoaded(true);
-        }
-      }
-    };
-    fetchOrderData();
-  }, [assignmentDetail]);
-
-  console.log("Assignment Detail:", orderDetail);
+    if (route.params?.paymentSuccess) {
+      setPaymentSuccess(true);
+    }
+  }, [route.params?.paymentSuccess]);
 
   useFocusEffect(
     useCallback(() => {
@@ -185,15 +160,33 @@ const OrderDetail = ({ navigation, route }) => {
     }, [assignmentId])
   );
 
+  useEffect(() => {
+    const fetchOrderData = async () => {
+      if (assignmentDetail && assignmentDetail.orderId) {
+        try {
+          await fetchOrderDetail(assignmentDetail.orderId);
+          setDataLoaded(true);
+        } catch (error) {
+          console.error("Error fetching order details:", error);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể tải chi tiết đơn hàng",
+          });
+          setDataLoaded(true);
+        }
+      }
+    };
+    fetchOrderData();
+  }, [assignmentDetail]);
+
   const handleCancelDelivery = async () => {
     try {
       // Check if orderId exists
-      if (!currentOrderId) {
-        return Alert.alert(
-          "Lỗi",
-          "Không tìm thấy mã đơn hàng. Vui lòng thử lại.",
-          [{ text: "OK" }]
-        );
+      if (!assignmentDetail.orderId) {
+        return Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng", [
+          { text: "OK" },
+        ]);
       }
 
       // Validate image requirement
@@ -214,7 +207,7 @@ const OrderDetail = ({ navigation, route }) => {
 
       // Create form data with proper structure
       const formData = new FormData();
-      formData.append("orderId", currentOrderId);
+      formData.append("orderId", assignmentDetail.orderId);
       formData.append("reason", cancelReason);
 
       // Append image with proper structure for FormData
@@ -229,38 +222,38 @@ const OrderDetail = ({ navigation, route }) => {
         type: imageType,
       });
 
-      // Send the request
-      await cancelPickUp(formData);
-
-      // Close modal and show success toast
+      // Close modal BEFORE sending the request
       setCancelModalVisible(false);
+
+      // Send the request
+      await cancelDelivery(formData);
+
+      // Reset form state
       setCancelReason("");
       setImages([]);
 
+      // Show success toast with correct message
       Toast.show({
         type: "success",
-        text1: "Đã hủy xác nhận lấy hàng.",
+        text1: "Đã hủy giao hàng thành công.",
       });
 
-      // Refresh list
-      fetchAssignmentList();
+      // Navigate back
+      navigation.goBack();
     } catch (error) {
-      console.log("Cancel pick up error:", error);
-      Alert.alert(
-        "Lỗi",
-        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
-        [{ text: "OK" }]
-      );
+      console.log("Cancel delivery error:", error);
+
+      // Fixed error message - removed undefined variable
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi hủy giao hàng.", [{ text: "OK" }]);
     }
   };
 
   const handleConfirmDelivery = async () => {
     try {
-      // Validate image requirement
       if (!images || images.length === 0) {
         return Alert.alert(
           "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh xác nhận lấy hàng",
+          "Vui lòng gửi ít nhất một ảnh xác nhận giao hàng",
           [{ text: "OK" }]
         );
       }
@@ -271,7 +264,6 @@ const OrderDetail = ({ navigation, route }) => {
           { text: "OK" },
         ]);
       }
-
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
@@ -292,7 +284,6 @@ const OrderDetail = ({ navigation, route }) => {
       setCompleteModalVisible(false);
       // Call the API
       await confirmDelivery(formData);
-
       // Close modal and reset values
       setCompleteNote("");
       setImages([]);
@@ -302,14 +293,14 @@ const OrderDetail = ({ navigation, route }) => {
         text1: "Đơn hàng đã hoàn thành",
         text2: "Xác nhận lấy hàng thành công",
       });
-      navigation.goBack();
+      navigation.navigate("DriverDeliveryScreen");
     } catch (error) {
       console.error("Error confirming pick up:", error);
 
       // Show specific validation errors if available
       const errorMsg = error.response?.data?.errors?.notes
         ? error.response.data.errors.notes[0]
-        : confirmPickUpError || "Không thể xác nhận lấy hàng";
+        : "Không thể xác nhận lấy hàng";
 
       Toast.show({
         type: "error",
@@ -335,6 +326,74 @@ const OrderDetail = ({ navigation, route }) => {
       } else if (result.uri) {
         setImages([...images, result.uri]);
       }
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log("Trạng thái quyền camera:", status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    console.log("Kết quả từ camera:", result);
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
+    }
+  };
+
+  const handleMakePayment = async () => {
+    try {
+      // Create form data for the payment request
+      const formData = new FormData();
+      formData.append("orderId", assignmentDetail.orderId);
+      formData.append("description", `Đơn hàng ${assignmentDetail.orderId}`);
+
+      // Call API to create payment
+      const response = await createPayment(formData);
+
+      if (response && response.data && response.data.checkoutUrl) {
+        // Navigate to PayOS WebView with the checkout URL
+        navigation.navigate("PayosWebView", {
+          checkoutUrl: response.data.checkoutUrl,
+          orderId: assignmentDetail.orderId,
+          returnToScreen: "OrderDetail",
+          assignmentId: assignmentId,
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không thể tạo liên kết thanh toán",
+        });
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi thanh toán",
+        text2: error.message || "Đã xảy ra lỗi khi tạo thanh toán",
+      });
     }
   };
 
@@ -376,12 +435,157 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
                 onPress={() => {
                   setCancelModalVisible(false);
                   setCancelReason("");
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonCancelText}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonConfirm]}
+                onPress={handleCancelDelivery}
+              >
+                <Text style={styles.buttonConfirmText}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Complete Order Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={completeModalVisible}
+        onRequestClose={() => setCompleteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.centeredView}
+        >
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Xác nhận hoàn thành đơn</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Nhập ghi chú"
+              value={completeNote}
+              onChangeText={setCompleteNote}
+              multiline={true}
+              numberOfLines={4}
+              mode="outlined"
+            />
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonCancel]}
+                onPress={() => {
+                  setCompleteModalVisible(false);
+                  setCompleteNote("");
+                  setImages([]);
                 }}
               >
                 <Text style={styles.buttonCancelText}>Đóng</Text>
@@ -389,10 +593,7 @@ const OrderDetail = ({ navigation, route }) => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonConfirm]}
                 onPress={() => {
-                  console.log("Order canceled with reason:", cancelReason);
-                  setCancelModalVisible(false);
-                  // Here you would call your API to cancel the order
-                  // and then potentially navigate back or show confirmation
+                  handleConfirmDelivery();
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -502,6 +703,34 @@ const OrderDetail = ({ navigation, route }) => {
             </View>
           </View>
         </View>
+        <View style={styles.sectionDivider} />
+        {/* User Information Section */}
+        <View>
+          <View style={styles.userInfoContainer}>
+            <View style={styles.userInfoHeader}>
+              <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
+              <TouchableOpacity style={styles.chatButton}>
+                <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
+                <Text style={styles.chatButtonText}>Nhắn tin</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="person-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Họ tên:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.fullname || "Chưa có thông tin"}
+              </Text>
+            </View>
+            <View style={styles.userInfoRow}>
+              <Ionicons name="call-outline" size={20} color="#02A257" />
+              <Text style={styles.userInfoLabel}>Số điện thoại:</Text>
+              <Text style={styles.userInfoValue}>
+                {assignmentDetail?.phonenumber || "Chưa có thông tin"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.sectionDivider} />
         {/* Location section */}
         <View>
@@ -638,18 +867,54 @@ const OrderDetail = ({ navigation, route }) => {
       </ScrollView>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
+          style={[
+            styles.button,
+            styles.cancelButton,
+            isLoadingCancelDelivery && { backgroundColor: "#6c757d" },
+          ]}
           onPress={() => setCancelModalVisible(true)}
+          disabled={isLoadingCancelDelivery || paymentSuccess}
         >
-          <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          {isLoadingCancelDelivery ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.completeButton]}
-          onPress={() => console.log("Complete order")}
-        >
-          <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
-        </TouchableOpacity>
+        {selectedPayment === "cash" || paymentSuccess ? (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.completeButton,
+              isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={() => setCompleteModalVisible(true)}
+            disabled={isLoadingConfirmDelivery}
+          >
+            {isLoadingConfirmDelivery ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.completeButton,
+              isLoadingPayment && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={handleMakePayment}
+            disabled={isLoadingPayment}
+          >
+            {isLoadingPayment ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.completeButtonText}>Thanh toán</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -745,11 +1010,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
   paymentOptionNew: {
     padding: 15,
     alignItems: "center",
@@ -815,7 +1075,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalView: {
     margin: 20,
@@ -831,6 +1091,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    width: "80%",
   },
   modalTitle: {
     fontSize: 18,
@@ -839,7 +1100,27 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 100,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
+  },
+  imagePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  imagePickerButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#555",
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
     marginBottom: 15,
   },
   modalButtonContainer: {
@@ -867,6 +1148,83 @@ const styles = StyleSheet.create({
   buttonConfirmText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  imagePreviewContainer: {
+    width: 250,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 5,
+    overflow: "hidden",
+  },
+  imagesScrollContainer: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  imageWrapper: {
+    width: 250,
+    height: 150,
+    position: "relative",
+    marginRight: 12,
+    borderRadius: 8,
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    backgroundColor: "white",
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  userInfoContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 8,
+    gap: 10,
+  },
+  userInfoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userInfoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  chatButtonText: {
+    fontSize: 14,
+    color: "#63B35C",
+  },
+  userInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  userInfoValue: {
+    fontSize: 14,
+    color: "#666",
   },
 });
 

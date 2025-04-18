@@ -7,6 +7,7 @@ import DriverBottomNavigationTab from "../navigation/driverNavigation/driverBott
 import StaffBottomNavigationTab from "../navigation/staffNavigation/staffBottomNavigation.js";
 import * as Location from "expo-location";
 import useAuthStore from "../api/store/authStore";
+import PayosWebView from "../screens/driverScreens/orders/payment/payosWebView.jsx";
 
 const Stack = createNativeStackNavigator();
 
@@ -98,11 +99,20 @@ const Layout = () => {
               options={{ headerShown: false }}
             />
           ) : (
-            <Stack.Screen
-              name="DriverHome"
-              component={DriverBottomNavigationTab}
-              options={{ headerShown: false }}
-            />
+            <>
+              <Stack.Screen
+                name="DriverHome"
+                component={DriverBottomNavigationTab}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="PayosWebView"
+                component={PayosWebView}
+                options={{
+                  headerShown: false,
+                }}
+              />
+            </>
           )
         ) : (
           // Show authentication flow when not authenticated

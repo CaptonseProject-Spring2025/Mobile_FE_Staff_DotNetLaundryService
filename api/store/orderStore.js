@@ -122,7 +122,6 @@ const useOrderStore = create((set) => ({
           },
         }
       );
-      console.log("Cancel pickup response:", response);
       set({ isLoadingCancelPickUp: false });
       return response;
     } catch (error) {
@@ -147,7 +146,7 @@ const useOrderStore = create((set) => ({
         `/driver/start-delivery?orderId=${orderId}`
       );
       set({ isLoadingStartDelivery: false });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error starting delivery:", error);
       set({ startDeliveryError: error.message, isLoadingStartDelivery: false });
@@ -156,11 +155,17 @@ const useOrderStore = create((set) => ({
 
   isLoadingConfirmDelivery: false,
   confirmDeliveryError: null,
-  confirmDelivery: async (orderId, note) => {
+  confirmDelivery: async (formData) => {
     try {
       set({ isLoadingConfirmDelivery: true, confirmDeliveryError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-delivered?orderId=${orderId}&notes=${note}`
+        `/driver/confirm-delivered`,
+         formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       set({ isLoadingConfirmDelivery: false });
       return response.data;
@@ -194,11 +199,11 @@ const useOrderStore = create((set) => ({
 
   isLoadingFinishDelivery: false,
   finishDeliveryError: null,
-  finishDelivery: async () => {
+  finishDelivery: async (orderId) => {
     try {
       set({ isLoadingFinishDelivery: true, finishDeliveryError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-finish-delivery`
+        `driver/confirm-delivery-success?orderId=${orderId}`
       );
       set({ isLoadingFinishDelivery: false });
       return response.data;

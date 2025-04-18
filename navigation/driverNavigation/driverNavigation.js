@@ -9,8 +9,11 @@ import AddressNavigateMap from "../../screens/driverScreens/orders/pickup/addres
 import OrderPickupDetail from "../../screens/driverScreens/orders/pickup/orderPickupDetail.jsx";
 import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/delivery/addressDeliveryNavigation.jsx";
 import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confirmPickup.jsx";
-import UserListScreen from '../../screens/driverScreens/chat/UserListScreen.jsx';
-import ChatScreen from '../../screens/driverScreens/chat/ChatScreen.jsx';
+import UserListScreen from "../../screens/driverScreens/chat/UserListScreen.jsx";
+import ChatScreen from "../../screens/driverScreens/chat/ChatScreen.jsx";
+import PayosWebView from "../../screens/driverScreens/orders/payment/payosWebView.jsx";
+import { TouchableOpacity, Text } from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -25,29 +28,53 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="DriverPickupScreen"
         component={PickupScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Đơn nhận hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="DriverDeliveryScreen"
         component={DeliveryScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Đơn giao hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="DriverDeliveryOrderDetailScreen"
         component={OrderDetail}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverDeliveryScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="AddressNavigateMap"
@@ -70,11 +97,19 @@ export function DriverHomeScreen() {
       <Stack.Screen
         name="DriverOrderPickupDetailScreen"
         component={OrderPickupDetail}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Chi tiết đơn hàng",
           headerTitleAlign: "center",
           headerStyle: { height: 100 },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverPickupScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={25} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="ConfirmPickup"
@@ -103,16 +138,22 @@ export function DriverStatisticScreen() {
 }
 
 //man hinh chat
-//màn hình chat
-
 export function DriverChatScreen() {
   return (
     <Stack.Navigator initialRouteName="UserListScreen">
-      <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }}/>
-      <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+      <Stack.Screen
+        name="UserListScreen"
+        component={UserListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{
           headerTitle: "Trò chuyện",
           headerTitleAlign: "center",
-        }}/>
+        }}
+      />
     </Stack.Navigator>
   );
 }
