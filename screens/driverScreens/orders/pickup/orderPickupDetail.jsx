@@ -21,6 +21,8 @@ import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
+import useAuthStore from '../../../../api/store/authStore';
+import axiosClient from '../../../../api/config/axiosClient';
 
 const OrderPickupDetail = ({ navigation, route }) => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -44,6 +46,42 @@ const OrderPickupDetail = ({ navigation, route }) => {
     isLoadingConfirmPickUp,
     confirmPickUpError,
   } = useOrderStore();
+
+  const { userDetail } = useAuthStore();
+  const currentUserId = userDetail?.userId;
+
+  console.log("currentUserId", currentUserId);
+
+  const startConversation = async (receiverId) => {
+    try {
+      const response = await axiosClient.get(
+        `Conversations/${receiverId}?currentUserId=${currentUserId}`
+      );
+      const data = response.data;
+
+      if (!data.exists) {
+        const createResponse = await axiosClient.post("/Conversations", {
+          userOneId: currentUserId,
+          userTwoId: receiverId,
+        });
+
+        navigation.navigate("ChatScreen", {
+          conversationId: createResponse.data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+        });
+      } else {
+        navigation.navigate("ChatScreen", {
+          conversationId: data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+        });
+      }
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+    }
+  };
+
 
   useFocusEffect(
     useCallback(() => {
@@ -579,7 +617,10 @@ const OrderPickupDetail = ({ navigation, route }) => {
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfoHeader}>
               <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
-              <TouchableOpacity style={styles.chatButton}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => {console.log("assignmentDetail", assignmentDetail)
+                startConversation(assignmentDetail?.customerId)
+
+              }}>
                 <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
                 <Text style={styles.chatButtonText}>Nhắn tin</Text>
               </TouchableOpacity>

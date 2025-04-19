@@ -31,6 +31,7 @@ function UserListScreen({ navigation }) {
 
       const response = await axiosClient.get("/users", {
         params: {
+          role: "Admin",
           page: pageNumber,
           pageSize: 10,
         },

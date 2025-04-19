@@ -25,6 +25,10 @@ export function DriverHomeScreen() {
         component={DriverMenu}
         options={{ headerShown: false }}
       />
+       <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+          headerTitle: "Trò chuyện",
+          headerTitleAlign: "center",
+        }}/>
       <Stack.Screen
         name="DriverPickupScreen"
         component={PickupScreen}
