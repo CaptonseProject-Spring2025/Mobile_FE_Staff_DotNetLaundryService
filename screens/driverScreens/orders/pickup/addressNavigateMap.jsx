@@ -15,6 +15,7 @@ import {
 import MapboxGL from "@rnmapbox/maps";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
@@ -27,7 +28,7 @@ LogBox.ignoreLogs([
 
 const AddressNavigateMap = () => {
   const route = useRoute();
-  const { userData } = route.params || {};
+  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
     "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -40,9 +41,9 @@ const AddressNavigateMap = () => {
   const [routeGeoJSON, setRouteGeoJSON] = useState(null);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
-  const [isDrivingView, setIsDrivingView] = useState(false);
+  const [isDrivingView, setIsDrivingView] = useState(initialDrivingView || false);
   const [permissionStatus, setPermissionStatus] = useState(null);
-  const [showTravelingArrow, setShowTravelingArrow] = useState(false);
+  const [showTravelingArrow, setShowTravelingArrow] = useState(initialTravelingArrow || false);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
@@ -68,8 +69,8 @@ const AddressNavigateMap = () => {
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // haversine formula
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // c is the angular distance in radians
 
     return R * c; // in meters
   };
@@ -149,7 +150,7 @@ const AddressNavigateMap = () => {
               newLocation.latitude, newLocation.longitude
             );
 
-            if (distanceMoved > 5) { // if distance moved is more than 5 meters update driver location
+            if (distanceMoved > 10) { // if distance moved is more than 5 meters update driver location
               setDriverLocation(newLocation);
             }
           } else {
@@ -194,8 +195,8 @@ const AddressNavigateMap = () => {
           driverLocation.latitude, driverLocation.longitude
         );
 
-        // Only fetch new route if moved more than 50 meters from last fetch
-        shouldFetch = distanceMoved > 50;
+        // Only fetch new route if moved more than 10 meters from last fetch
+        shouldFetch = distanceMoved > 10;
       }
 
       if (shouldFetch) {
@@ -212,7 +213,7 @@ const AddressNavigateMap = () => {
       setLastFetchedLocation(driverLocation);
 
       const response = await axios.get(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
+        `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
         {
           params: {
             access_token: MAPBOX_ACCESS_TOKEN,
@@ -278,6 +279,19 @@ const AddressNavigateMap = () => {
       setLineUpdateKey((prev) => prev + 1);
     }
   };
+
+  // Start navigation animation if in driving view automatically
+  useEffect(() => {
+    if (isDrivingView && routeCoordinates.length > 0 && duration) {
+      setShowTravelingArrow(true);
+      Animated.timing(arrowPositionRef, {
+        toValue: 1,
+        duration: duration * 60000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrivingView, routeCoordinates.length, duration]);
 
   if (permissionStatus === "denied") {
     return (
@@ -452,7 +466,7 @@ const AddressNavigateMap = () => {
 
                 <View style={styles.routeInfoContainer}>
                   <View style={styles.routeInfoItem}>
-                    <Ionicons name="navigate" size={20} color="#02A257" />
+                    <FontAwesome name="road" size={20} color="#02A257" />
                     <Text style={styles.routeInfoText}>
                       {distance || "0"} km
                     </Text>

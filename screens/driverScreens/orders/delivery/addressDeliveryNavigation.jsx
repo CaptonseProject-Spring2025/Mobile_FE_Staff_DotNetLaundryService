@@ -27,7 +27,7 @@ LogBox.ignoreLogs([
 
 const AddressDeliveryNavigateMap = () => {
   const route = useRoute();
-  const { userData } = route.params || {};
+  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
     "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -40,9 +40,9 @@ const AddressDeliveryNavigateMap = () => {
   const [routeGeoJSON, setRouteGeoJSON] = useState(null);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
-  const [isDrivingView, setIsDrivingView] = useState(false);
+  const [isDrivingView, setIsDrivingView] = useState(initialDrivingView || false);
   const [permissionStatus, setPermissionStatus] = useState(null);
-  const [showTravelingArrow, setShowTravelingArrow] = useState(false);
+  const [showTravelingArrow, setShowTravelingArrow] = useState(initialTravelingArrow || false);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
@@ -138,6 +138,46 @@ const AddressDeliveryNavigateMap = () => {
     return R * c; // in meters
   };
 
+  // Start navigation animation if in driving view automatically
+  useEffect(() => {
+    if (isDrivingView && routeCoordinates.length > 0 && duration) {
+      setShowTravelingArrow(true);
+      Animated.timing(arrowPositionRef, {
+        toValue: 1,
+        duration: duration * 60000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrivingView, routeCoordinates.length, duration]);
+
+  // Helper functions for map positioning
+  const fitMapToShowRoute = () => {
+    if (mapViewRef.current && driverLocation && userLocation) {
+      const bounds = [
+        [driverLocation.longitude, driverLocation.latitude],
+        [userLocation.longitude, userLocation.latitude]
+      ];
+      
+      mapViewRef.current.fitBounds(
+        bounds[0],
+        bounds[1],
+        60, // padding
+        1000 // duration ms
+      );
+    }
+  };
+
+  const centerOnDriverLocation = () => {
+    if (cameraRef.current && driverLocation) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
+        zoomLevel: 15,
+        animationDuration: 1000,
+      });
+    }
+  };
+
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
     let locationSubscription;
@@ -165,8 +205,8 @@ const AddressDeliveryNavigateMap = () => {
               newLocation.longitude
             );
 
-            if (distanceMoved > 5) {
-              // if distance moved is more than 5 meters update driver location
+            if (distanceMoved > 10) {
+              // if distance moved is more than 10 meters update driver location
               setDriverLocation(newLocation);
             }
           } else {
@@ -213,8 +253,8 @@ const AddressDeliveryNavigateMap = () => {
           driverLocation.longitude
         );
 
-        // Only fetch new route if moved more than 50 meters from last fetch
-        shouldFetch = distanceMoved > 50;
+        // Only fetch new route if moved more than 10 meters from last fetch
+        shouldFetch = distanceMoved > 10;
       }
 
       if (shouldFetch) {
@@ -231,7 +271,7 @@ const AddressDeliveryNavigateMap = () => {
       setLastFetchedLocation(driverLocation);
 
       const response = await axios.get(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
+        `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
         {
           params: {
             access_token: MAPBOX_ACCESS_TOKEN,

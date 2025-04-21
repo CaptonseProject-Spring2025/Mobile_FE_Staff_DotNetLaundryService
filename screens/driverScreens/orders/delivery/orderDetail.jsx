@@ -791,14 +791,17 @@ const OrderDetail = ({ navigation, route }) => {
                   userData: {
                     deliveryLongitude: orderDetail.deliveryLongitude,
                     deliveryLatitude: orderDetail.deliveryLatitude,
-                    deliveryName: orderDetail.deliveryName,
-                    deliveryPhone: orderDetail.deliveryPhone,
-                    deliveryAddressDetail: orderDetail.deliveryAddressDetail,
+                    deliveryName: orderDetail.deliveryName || assignmentDetail?.fullname,
+                    deliveryPhone: orderDetail.deliveryPhone || assignmentDetail?.phonenumber,
+                    deliveryAddressDetail: orderDetail.deliveryAddressDetail || assignmentDetail?.deliveryAddress,
                   },
+                  showDrivingView: false, // Initially show the overview map
                   showTravelingArrow: true,
                 })
               }
+              className="flex-row items-center gap-x-2"
             >
+              <Ionicons name="map-outline" size={20} color="#63B35C" />
               <Text style={{ color: "#63B35C" }}>Chỉ đường</Text>
             </TouchableOpacity>
           </View>

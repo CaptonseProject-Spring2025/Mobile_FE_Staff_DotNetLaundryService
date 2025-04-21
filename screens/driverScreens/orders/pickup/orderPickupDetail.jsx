@@ -662,14 +662,17 @@ const OrderPickupDetail = ({ navigation, route }) => {
                   userData: {
                     pickupLongitude: orderDetail.pickupLongitude,
                     pickupLatitude: orderDetail.pickupLatitude,
-                    pickupName: orderDetail.pickupName,
-                    pickupPhone: orderDetail.pickupPhone,
-                    pickupAddressDetail: orderDetail.pickupAddressDetail,
+                    pickupName: orderDetail.pickupName || assignmentDetail?.fullname,
+                    pickupPhone: orderDetail.pickupPhone || assignmentDetail?.phonenumber,
+                    pickupAddressDetail: orderDetail.pickupAddressDetail || assignmentDetail?.pickupAddress,
                   },
+                  showDrivingView: false, // Initially show the overview map
                   showTravelingArrow: true,
                 })
               }
+              className="flex-row items-center gap-x-2"
             >
+              <Ionicons name="map-outline" size={20} color="#63B35C" />
               <Text style={{ color: "#63B35C" }}>Chỉ đường</Text>
             </TouchableOpacity>
           </View>
