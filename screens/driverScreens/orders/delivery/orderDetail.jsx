@@ -133,6 +133,8 @@ const OrderDetail = ({ navigation, route }) => {
     route.params?.paymentSuccess || false
   );
 
+  console.log("assignmentDetail", assignmentDetail);
+
   useEffect(() => {
     if (route.params?.paymentSuccess) {
       setPaymentSuccess(true);
@@ -709,7 +711,7 @@ const OrderDetail = ({ navigation, route }) => {
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfoHeader}>
               <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
-              <TouchableOpacity style={styles.chatButton}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => console.log("assignmentDetail", assignmentDetail)}>
                 <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
                 <Text style={styles.chatButtonText}>Nhắn tin</Text>
               </TouchableOpacity>
@@ -718,6 +720,7 @@ const OrderDetail = ({ navigation, route }) => {
               <Ionicons name="person-outline" size={20} color="#02A257" />
               <Text style={styles.userInfoLabel}>Họ tên:</Text>
               <Text style={styles.userInfoValue}>
+              
                 {assignmentDetail?.fullname || "Chưa có thông tin"}
               </Text>
             </View>
