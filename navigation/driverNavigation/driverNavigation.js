@@ -11,7 +11,6 @@ import AddressDeliveryNavigateMap from "../../screens/driverScreens/orders/deliv
 import ConfirmPickup from "../../screens/driverScreens/orders/confirmOrder/confirmPickup.jsx";
 import UserListScreen from "../../screens/driverScreens/chat/UserListScreen.jsx";
 import ChatScreen from "../../screens/driverScreens/chat/ChatScreen.jsx";
-import PayosWebView from "../../screens/driverScreens/orders/payment/payosWebView.jsx";
 import { TouchableOpacity, Text } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 const Stack = createNativeStackNavigator();
@@ -25,10 +24,14 @@ export function DriverHomeScreen() {
         component={DriverMenu}
         options={{ headerShown: false }}
       />
-       <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{
           headerTitle: "Trò chuyện",
           headerTitleAlign: "center",
-        }}/>
+        }}
+      />
       <Stack.Screen
         name="DriverPickupScreen"
         component={PickupScreen}
@@ -148,13 +151,13 @@ export function DriverChatScreen() {
       <Stack.Screen
         name="UserListScreen"
         component={UserListScreen}
-        options={{ headerShown: false }}
+        options={{ headerTitle: "Trò chuyện", headerTitleAlign: "center" }}
       />
       <Stack.Screen
         name="ChatScreen"
         component={ChatScreen}
         options={{
-          headerTitle: "Trò chuyện",
+          headerTitle: "Tin nhắn",
           headerTitleAlign: "center",
         }}
       />

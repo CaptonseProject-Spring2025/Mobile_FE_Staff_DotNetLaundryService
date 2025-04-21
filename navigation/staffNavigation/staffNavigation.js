@@ -115,19 +115,6 @@ export function StaffStatisticScreen() {
   );
 }
 
-//màn hình chat
-
-export function StaffChatScreen() {
-  return (
-    <Stack.Navigator initialRouteName="UserListScreen">
-      <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }}/>
-      <Stack.Screen name="ChatScreen" component={ChatScreen}  options={{
-          headerTitle: "Trò chuyện",
-          headerTitleAlign: "center",
-        }}/>
-    </Stack.Navigator>
-  );
-}
 
 //man hinh thong bao
 export function StaffNotificationScreen() {

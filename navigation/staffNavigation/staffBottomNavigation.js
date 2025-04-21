@@ -1,8 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StaffHomeScreen, StaffAccountScreen, StaffChatScreen } from "./staffNavigation.js";
+import { StaffHomeScreen, StaffAccountScreen } from "./staffNavigation.js";
 import Octicons from "react-native-vector-icons/Octicons";
-import UserScreen from "../../screens/staffScreens/chat/UserListScreen.jsx";
 const Tab = createBottomTabNavigator();
 
 const StaffBottomNavigationTab = () => {
@@ -41,14 +40,6 @@ const StaffBottomNavigationTab = () => {
           headerShown: false,
         }}
       />
-      <Tab.Screen
-        name="Chat"
-        component={StaffChatScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-
       <Tab.Screen
         name="Tài khoản"
         component={StaffAccountScreen}

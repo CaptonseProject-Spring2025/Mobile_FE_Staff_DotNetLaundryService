@@ -76,12 +76,12 @@ function OrderWashingListScreen({ navigation }) {
     }));
   };
 
-  const handleChatPress = (customerId, customerName) => {
-    navigation.navigate('ChatScreen', {
-      customerId,
-      customerName
-    });
-  };
+  // const handleChatPress = (customerId, customerName) => {
+  //   navigation.navigate('ChatScreen', {
+  //     customerId,
+  //     customerName
+  //   });
+  // };
 
   // Hàm chuyển đổi trạng thái thành màu sắc
   const getStatusColor = (status) => {
@@ -230,12 +230,12 @@ function OrderWashingListScreen({ navigation }) {
               </View>
             </View>
             <View className="flex-row items-center">
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 onPress={() => handleChatPress(item.customerInfo.customerId, item.customerInfo.customerName)}
                 className="bg-blue-500 rounded-full p-2 mr-2"
               >
                 <Ionicons name="chatbubble-outline" size={20} color="white" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <Ionicons 
                 name={isExpanded ? "chevron-up" : "chevron-down"} 
                 size={20} 

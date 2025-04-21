@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  StyleSheet,
 } from "react-native";
+import { TextInput } from "react-native-paper";
 import axiosClient from "../../../api/config/axiosClient";
 import useAuthStore from "../../../api/store/authStore";
 
 function UserListScreen({ navigation }) {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeUserId, setActiveUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -31,7 +35,7 @@ function UserListScreen({ navigation }) {
 
       const response = await axiosClient.get("/users", {
         params: {
-          role: "Admin",
+          role: "Customer",
           page: pageNumber,
           pageSize: 10,
         },
@@ -41,8 +45,11 @@ function UserListScreen({ navigation }) {
 
       if (pageNumber === 1) {
         setUsers(newUsers);
+        setFilteredUsers(newUsers);
       } else {
-        setUsers((prevUsers) => [...prevUsers, ...newUsers]);
+        const updatedUsers = [...users, ...newUsers];
+        setUsers(updatedUsers);
+        setFilteredUsers(updatedUsers);
       }
 
       if (newUsers.length < 10) {
@@ -60,6 +67,22 @@ function UserListScreen({ navigation }) {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Filter users when search query changes
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredUsers(users);
+      return;
+    }
+
+    const filtered = users.filter(
+      (user) =>
+        user.fullName &&
+        user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    setFilteredUsers(filtered);
+  }, [searchQuery, users]);
 
   // Tải thêm dữ liệu khi kéo tới cuối danh sách
   const handleLoadMore = () => {
@@ -86,12 +109,18 @@ function UserListScreen({ navigation }) {
           conversationId: createResponse.data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
+          name: users.find(user => user.userId === receiverId)?.fullName || "User",
+          avatar: users.find(user => user.userId === receiverId)?.avatar || 
+            "https://randomuser.me/api/portraits/lego/1.jpg"
         });
       } else {
         navigation.navigate("ChatScreen", {
           conversationId: data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
+          name: users.find(user => user.userId === receiverId)?.fullName || "User",
+          avatar: users.find(user => user.userId === receiverId)?.avatar || 
+            "https://randomuser.me/api/portraits/lego/1.jpg"
         });
       }
     } catch (error) {
@@ -99,84 +128,177 @@ function UserListScreen({ navigation }) {
     }
   };
 
-  // Render từng user
+  // Format time for last active status (placeholder function)
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Render user item with chatList.jsx styling
   const renderUserItem = ({ item }) => (
     <TouchableOpacity
-      className={`flex-row items-center p-4 border-b border-gray-200 ${
-        activeUserId === item.userId ? "bg-blue-100" : "bg-white"
-      }`}
+      style={styles.chatItem}
       onPress={() => {
         setActiveUserId(item.userId);
         startConversation(item.userId);
       }}
     >
-      {/* Hiển thị avatar */}
       <Image
         source={{
-          uri:
-            item.avatar ||
-            "data:image/jpeg;base64,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",
+          uri: item.avatar || "https://randomuser.me/api/portraits/lego/1.jpg"
         }}
-        className="w-12 h-12 rounded-full mr-4"
+        style={styles.avatar}
       />
-      {/* Hiển thị thông tin người dùng */}
-      <View className="flex-1">
-        <Text className="font-bold text-lg text-gray-800">{item.fullName}</Text>
-        <Text className="text-sm text-gray-600">
-          Email: {item.email || "Không có"}
-        </Text>
-        <Text className="text-sm text-gray-600">
-          SĐT: {item.phoneNumber || "Chưa cập nhật số điện thoại"}
-        </Text>
-        <Text className="text-sm text-gray-600">
-          Role: {item.role || "Chưa cập nhật vai trò"}
-        </Text>
+      <View style={styles.chatInfo}>
+        <View style={styles.nameTimeRow}>
+          <Text style={styles.name}>{item.fullName || "User"}</Text>
+          <Text style={styles.time}>{formatTime(item.lastActive)}</Text>
+        </View>
+        <View style={styles.messageRow}>
+          <Text style={styles.message} numberOfLines={1}>
+            {item.phoneNumber || "Tap to start conversation"}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
 
-  // Hiển thị loading khi tải lần đầu
   if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-100">
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text className="mt-4 text-lg text-gray-600">
-          Đang tải danh sách người dùng...
-        </Text>
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#63B35C" />
+        <Text style={styles.loadingText}>Đang tải danh sách người dùng...</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-100">
-      {/* Tiêu đề */}
-      <View className="pt-8 pb-4 px-4 bg-green-500 rounded-b-lg mb-4">
-        <Text className="text-2xl font-bold text-white text-center">
-          Danh sách người dùng
-        </Text>
-      </View>
-
-      {/* Danh sách người dùng */}
-      <FlatList
-        data={users}
-        renderItem={renderUserItem}
-        keyExtractor={(item, index) => index.toString()}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          isLoadingMore && (
-            <View className="py-4">
-              <ActivityIndicator size="small" color="#4CAF50" />
-              <Text className="mt-2 text-center text-sm text-gray-600">
-                Đang tải thêm...
-              </Text>
-            </View>
-          )
-        }
+    <View style={styles.container}>
+      <TextInput
+        placeholder="Tìm kiếm tên người dùng"
+        mode="outlined"
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        left={<TextInput.Icon icon="magnify" />}
+        style={{ backgroundColor: "#E9EAEB", margin: 20 }}
+        theme={{ colors: { primary: "#E9EAEB", outline: "#E9EAEB" } }}
+        outlineColor="#E9EAEB"
       />
+      
+      {filteredUsers.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Không tìm thấy người dùng nào</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredUsers}
+          renderItem={renderUserItem}
+          keyExtractor={(item) => item.userId.toString()}
+          contentContainerStyle={styles.listContainer}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoadingMore && (
+              <View style={{ padding: 20, alignItems: "center" }}>
+                <ActivityIndicator size="small" color="#63B35C" />
+              </View>
+            )
+          }
+        />
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#ffff",
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
+  header: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333333",
+  },
+  listContainer: {
+    paddingVertical: 8,
+  },
+  chatItem: {
+    flexDirection: "row",
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
+  },
+  chatInfo: {
+    flex: 1,
+  },
+  nameTimeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333333",
+  },
+  time: {
+    fontSize: 12,
+    color: "#999999",
+  },
+  messageRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  message: {
+    fontSize: 14,
+    color: "#666666",
+    flex: 1,
+    marginRight: 8,
+  },
+  unreadBadge: {
+    backgroundColor: "#5B8DF6",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  unreadText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+});
 
 export default UserListScreen;

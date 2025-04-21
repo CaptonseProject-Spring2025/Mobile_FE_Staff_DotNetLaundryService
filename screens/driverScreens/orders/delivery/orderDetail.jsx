@@ -133,7 +133,8 @@ const OrderDetail = ({ navigation, route }) => {
     route.params?.paymentSuccess || false
   );
 
-  console.log("assignmentDetail", assignmentDetail);
+  const { userDetail } = useAuthStore();
+  const currentUserId = userDetail?.userId;
 
   useEffect(() => {
     if (route.params?.paymentSuccess) {
@@ -181,6 +182,41 @@ const OrderDetail = ({ navigation, route }) => {
     };
     fetchOrderData();
   }, [assignmentDetail]);
+
+  const startConversation = async (receiverId) => {
+    try {
+      const response = await axiosClient.get(
+        `Conversations/${receiverId}?currentUserId=${currentUserId}`
+      );
+      const data = response.data;
+      const userData = userDetail;
+
+      if (!data.exists) {
+        const createResponse = await axiosClient.post("/Conversations", {
+          userOneId: currentUserId,
+          userTwoId: receiverId,
+        });
+
+        navigation.navigate("ChatScreen", {
+          conversationId: createResponse.data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+          name: userData.fullName,
+          avatar: userData.avatar,
+        });
+      } else {
+        navigation.navigate("ChatScreen", {
+          conversationId: data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+          userName: userData.fullName,
+          userAvatar: userData.avatar,
+        });
+      }
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+    }
+  };
 
   const handleCancelDelivery = async () => {
     try {
@@ -711,7 +747,12 @@ const OrderDetail = ({ navigation, route }) => {
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfoHeader}>
               <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
-              <TouchableOpacity style={styles.chatButton} onPress={() => console.log("assignmentDetail", assignmentDetail)}>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => {
+                  startConversation(assignmentDetail?.customerId);
+                }}
+              >
                 <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
                 <Text style={styles.chatButtonText}>Nhắn tin</Text>
               </TouchableOpacity>
@@ -720,7 +761,6 @@ const OrderDetail = ({ navigation, route }) => {
               <Ionicons name="person-outline" size={20} color="#02A257" />
               <Text style={styles.userInfoLabel}>Họ tên:</Text>
               <Text style={styles.userInfoValue}>
-              
                 {assignmentDetail?.fullname || "Chưa có thông tin"}
               </Text>
             </View>

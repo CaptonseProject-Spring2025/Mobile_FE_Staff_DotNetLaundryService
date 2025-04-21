@@ -21,8 +21,8 @@ import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
-import useAuthStore from '../../../../api/store/authStore';
-import axiosClient from '../../../../api/config/axiosClient';
+import useAuthStore from "../../../../api/store/authStore";
+import axiosClient from "../../../../api/config/axiosClient";
 
 const OrderPickupDetail = ({ navigation, route }) => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -50,14 +50,13 @@ const OrderPickupDetail = ({ navigation, route }) => {
   const { userDetail } = useAuthStore();
   const currentUserId = userDetail?.userId;
 
-  console.log("currentUserId", currentUserId);
-
   const startConversation = async (receiverId) => {
     try {
       const response = await axiosClient.get(
         `Conversations/${receiverId}?currentUserId=${currentUserId}`
       );
       const data = response.data;
+      const userData = userDetail;
 
       if (!data.exists) {
         const createResponse = await axiosClient.post("/Conversations", {
@@ -69,19 +68,22 @@ const OrderPickupDetail = ({ navigation, route }) => {
           conversationId: createResponse.data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
+          name: userData.fullName,
+          avatar: userData.avatar,
         });
       } else {
         navigation.navigate("ChatScreen", {
           conversationId: data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
+          userName: userData.fullName,
+          userAvatar: userData.avatar,
         });
       }
     } catch (error) {
       console.error("Error starting conversation:", error);
     }
   };
-
 
   useFocusEffect(
     useCallback(() => {
@@ -222,7 +224,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
       quality: 1,
     });
 
-
     if (result.canceled) {
       console.log("Người dùng đã hủy chụp ảnh.");
       return;
@@ -301,7 +302,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
       console.log("Confirm pick up error:", error.response?.data);
     }
   };
-
+ 
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
@@ -617,10 +618,12 @@ const OrderPickupDetail = ({ navigation, route }) => {
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfoHeader}>
               <Text style={styles.userInfoTitle}>Thông tin khách hàng</Text>
-              <TouchableOpacity style={styles.chatButton} onPress={() => {console.log("assignmentDetail", assignmentDetail)
-                startConversation(assignmentDetail?.customerId)
-
-              }}>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => {
+                  startConversation(assignmentDetail?.customerId);
+                }}
+              >
                 <Ionicons name="chatbubble-outline" size={20} color="#63B35C" />
                 <Text style={styles.chatButtonText}>Nhắn tin</Text>
               </TouchableOpacity>
