@@ -28,7 +28,7 @@ export function DriverHomeScreen() {
         name="ChatScreen"
         component={ChatScreen}
         options={{
-          headerTitle: "Trò chuyện",
+          headerTitle: "Tin nhắn",
           headerTitleAlign: "center",
         }}
       />

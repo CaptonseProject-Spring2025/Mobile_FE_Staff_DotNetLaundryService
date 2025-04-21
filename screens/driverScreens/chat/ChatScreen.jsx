@@ -25,7 +25,7 @@ const ChatScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const flatListRef = useRef(null);
   const route = useRoute();
-  const { conversationId, name, userId, currentUserId, avatar } = route.params;
+  const { conversationId, name, userName, userAvatar, currentUserId, avatar } = route.params;
 
   // Initialize SignalR connection
   useEffect(() => {
@@ -290,7 +290,7 @@ const ChatScreen = () => {
               style={styles.avatar} 
             />
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerName}>{name || "Chat"}</Text>
+              <Text style={styles.headerName}>{userName || "Chat"}</Text>
             </View>
           </View>
         </View>
@@ -311,11 +311,11 @@ const ChatScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerProfile}>
           <Image 
-            source={{ uri: avatar || "https://randomuser.me/api/portraits/lego/1.jpg" }} 
+            source={{ uri: userAvatar || "https://randomuser.me/api/portraits/lego/1.jpg" }} 
             style={styles.avatar} 
           />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerName}>{name || "Chat"}</Text>
+            <Text style={styles.headerName}>{userName || "Chat"}</Text>
           </View>
         </View>
       </View>

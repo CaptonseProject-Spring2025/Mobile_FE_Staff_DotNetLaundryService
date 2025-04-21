@@ -27,7 +27,11 @@ LogBox.ignoreLogs([
 
 const AddressDeliveryNavigateMap = () => {
   const route = useRoute();
-  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow } = route.params || {};
+  const {
+    userData,
+    showDrivingView: initialDrivingView,
+    showTravelingArrow: initialTravelingArrow,
+  } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
     "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -40,9 +44,13 @@ const AddressDeliveryNavigateMap = () => {
   const [routeGeoJSON, setRouteGeoJSON] = useState(null);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
-  const [isDrivingView, setIsDrivingView] = useState(initialDrivingView || false);
+  const [isDrivingView, setIsDrivingView] = useState(
+    initialDrivingView || false
+  );
   const [permissionStatus, setPermissionStatus] = useState(null);
-  const [showTravelingArrow, setShowTravelingArrow] = useState(initialTravelingArrow || false);
+  const [showTravelingArrow, setShowTravelingArrow] = useState(
+    initialTravelingArrow || false
+  );
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
@@ -109,17 +117,6 @@ const AddressDeliveryNavigateMap = () => {
     })();
   }, [userData]);
 
-  // Set up initial map position once locations are available
-  useEffect(() => {
-    if (mapReady && driverLocation && userLocation) {
-      // First time setup - fit both points
-      fitMapToShowRoute();
-    } else if (mapReady && driverLocation) {
-      // If only driver location is available
-      centerOnDriverLocation();
-    }
-  }, [driverLocation, userLocation, mapReady]);
-
   // Calculate distance between coordinates in meters using haversine formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
@@ -128,7 +125,7 @@ const AddressDeliveryNavigateMap = () => {
     const φ1 = (lat1 * Math.PI) / 180; // φ in radians
     const φ2 = (lat2 * Math.PI) / 180; // φ in radians
     const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180; // Δλ in radians
+    const Δλ = ((lon1 - lat1) * Math.PI) / 180; // Δλ in radians
 
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
@@ -150,23 +147,6 @@ const AddressDeliveryNavigateMap = () => {
       }).start();
     }
   }, [isDrivingView, routeCoordinates.length, duration]);
-
-  // Helper functions for map positioning
-  const fitMapToShowRoute = () => {
-    if (mapViewRef.current && driverLocation && userLocation) {
-      const bounds = [
-        [driverLocation.longitude, driverLocation.latitude],
-        [userLocation.longitude, userLocation.latitude]
-      ];
-      
-      mapViewRef.current.fitBounds(
-        bounds[0],
-        bounds[1],
-        60, // padding
-        1000 // duration ms
-      );
-    }
-  };
 
   const centerOnDriverLocation = () => {
     if (cameraRef.current && driverLocation) {
@@ -341,6 +321,7 @@ const AddressDeliveryNavigateMap = () => {
     }
   };
 
+  // // Add this useEffect to handle zoom changes
   if (permissionStatus === "denied") {
     return (
       <SafeAreaView style={styles.container}>
@@ -364,6 +345,7 @@ const AddressDeliveryNavigateMap = () => {
           <MapboxGL.MapView
             ref={mapViewRef}
             style={styles.map}
+            styleURL={MapboxGL.StyleURL.Light}
             compassEnabled={true}
             zoomEnabled={true}
             scrollEnabled={true}
@@ -372,7 +354,7 @@ const AddressDeliveryNavigateMap = () => {
             logoEnabled={false}
             attributionEnabled={false}
             scaleBarEnabled={false}
-            onDidFinishRenderingMapFully={() => setMapReady(true)}
+            onDidFinishRenderingMapFully={() => setMapReady(true)} // Ensure mapReady state is updated
           >
             <MapboxGL.Camera
               ref={cameraRef}
@@ -384,7 +366,7 @@ const AddressDeliveryNavigateMap = () => {
               }
               followPitch={isDrivingView ? 60 : 0}
               pitch={isDrivingView ? 60 : 0}
-              zoomLevel={isDrivingView ? 17 : 12}
+              zoomLevel={isDrivingView ? 18 : 14}
               animationMode="flyTo"
               animationDuration={2000}
             />
@@ -495,7 +477,6 @@ const AddressDeliveryNavigateMap = () => {
                   style={styles.endNavButton}
                   onPress={() => {
                     setIsDrivingView(false);
-                    setTimeout(fitMapToShowRoute, 500);
                   }}
                 >
                   <Text style={styles.endNavButtonText}>Kết thúc</Text>
@@ -510,7 +491,8 @@ const AddressDeliveryNavigateMap = () => {
               <Card.Content>
                 <View style={styles.userInfoContainer}>
                   <Text style={styles.userAddress} numberOfLines={2}>
-                   Địa chỉ: {userData?.deliveryAddressDetail || "No address details"}
+                    Địa chỉ:{" "}
+                    {userData?.deliveryAddressDetail || "No address details"}
                   </Text>
                 </View>
 

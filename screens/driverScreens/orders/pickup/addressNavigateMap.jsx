@@ -64,7 +64,7 @@ const AddressNavigateMap = () => {
     const φ1 = (lat1 * Math.PI) / 180; // φ in radians
     const φ2 = (lat2 * Math.PI) / 180; // φ in radians
     const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180; // Δλ in radians
+    const Δλ = ((lon1 - lon1) * Math.PI) / 180; // Δλ in radians
 
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
@@ -316,6 +316,7 @@ const AddressNavigateMap = () => {
           <MapboxGL.MapView
             ref={mapViewRef}
             style={styles.map}
+            styleURL={MapboxGL.StyleURL.Light}
             compassEnabled={true}
             zoomEnabled={true}
             scrollEnabled={true}

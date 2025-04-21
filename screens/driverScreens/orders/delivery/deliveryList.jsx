@@ -47,17 +47,25 @@ const DeliveryList = ({ searchQuery = "" }) => {
 
   useEffect(() => {
     if (assignmentList) {
+      const lowerCaseSearchQuery = searchQuery.toLowerCase();
       setFilteredOrders(
         assignmentList.filter(
           (order) =>
-            order.status === "ASSIGNED_DELIVERY" &&
-            (order.currentStatus === "SCHEDULED_DELIVERY" ||
-              order.currentStatus === "DELIVERING")
+            (order.status === "ASSIGNED_DELIVERY" &&
+              (order.currentStatus === "SCHEDULED_DELIVERY" ||
+                order.currentStatus === "DELIVERING")) &&
+            (order.orderId
+              .toLowerCase()
+              .includes(lowerCaseSearchQuery) || // Search by orderId
+              order.fullname
+                .toLowerCase()
+                .includes(lowerCaseSearchQuery) || 
+              order.phonenumber.includes(searchQuery)) 
         )
       );
     }
-  }, [assignmentList]);
-  
+  }, [assignmentList, searchQuery]); // Add searchQuery dependency
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -118,7 +126,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
       });
 
       // Send the request
-      await cancelPickUp(formData);
+      await cancelDelivery(formData); // Corrected function call
 
       // Close modal and show success toast
       setCancelModalVisible(false);
@@ -133,10 +141,10 @@ const DeliveryList = ({ searchQuery = "" }) => {
       // Refresh list
       fetchAssignmentList();
     } catch (error) {
-      console.log("Cancel pick up error:", error);
+      console.log("Cancel delivery error:", error); // Changed log message
       Alert.alert(
         "Lỗi",
-        cancelPickUpError || "Đã xảy ra lỗi khi hủy xác nhận lấy hàng.",
+        error.message || "Đã xảy ra lỗi khi hủy giao hàng.", // Corrected error message context
         [{ text: "OK" }]
       );
     }
@@ -358,16 +366,22 @@ const DeliveryList = ({ searchQuery = "" }) => {
       <Text style={{ fontSize: 24, fontWeight: "bold", textAlign: "center" }}>
         Đơn cần giao ({filteredOrders?.length || 0})
       </Text>
-      <FlatList
-        data={filteredOrders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item) => item.assignmentId.toString()}
-        refreshing={refreshing}
-        onRefresh={() => onRefresh()}
-        showsVerticalScrollIndicator={false}
-        style={{ marginTop: 10 }}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+      {filteredOrders && filteredOrders.length > 0 ? ( // Check if filteredOrders has items
+        <FlatList
+          data={filteredOrders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item.assignmentId.toString()}
+          refreshing={refreshing}
+          onRefresh={onRefresh} // Corrected prop name
+          showsVerticalScrollIndicator={false}
+          style={{ marginTop: 10 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
+          <Text style={{ fontSize: 18, color: '#666' }}>Không tìm thấy đơn hàng.</Text>
+        </View>
+      )}
       {/* Cancel Reason Modal */}
       <Modal
         animationType="slide"

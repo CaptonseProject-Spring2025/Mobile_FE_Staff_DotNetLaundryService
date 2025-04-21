@@ -23,6 +23,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
 import useAuthStore from "../../../../api/store/authStore";
 import axiosClient from "../../../../api/config/axiosClient";
+import useUserStore from "../../../../api/store/userStore";
 
 const OrderPickupDetail = ({ navigation, route }) => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -48,42 +49,8 @@ const OrderPickupDetail = ({ navigation, route }) => {
   } = useOrderStore();
 
   const { userDetail } = useAuthStore();
+  const { getUserById, userInfo } = useUserStore();
   const currentUserId = userDetail?.userId;
-
-  const startConversation = async (receiverId) => {
-    try {
-      const response = await axiosClient.get(
-        `Conversations/${receiverId}?currentUserId=${currentUserId}`
-      );
-      const data = response.data;
-      const userData = userDetail;
-
-      if (!data.exists) {
-        const createResponse = await axiosClient.post("/Conversations", {
-          userOneId: currentUserId,
-          userTwoId: receiverId,
-        });
-
-        navigation.navigate("ChatScreen", {
-          conversationId: createResponse.data.conversationId,
-          userId: receiverId,
-          currentUserId: currentUserId,
-          name: userData.fullName,
-          avatar: userData.avatar,
-        });
-      } else {
-        navigation.navigate("ChatScreen", {
-          conversationId: data.conversationId,
-          userId: receiverId,
-          currentUserId: currentUserId,
-          userName: userData.fullName,
-          userAvatar: userData.avatar,
-        });
-      }
-    } catch (error) {
-      console.error("Error starting conversation:", error);
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -126,6 +93,59 @@ const OrderPickupDetail = ({ navigation, route }) => {
     };
     fetchOrderData();
   }, [assignmentDetail]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (assignmentDetail && assignmentDetail.customerId) {
+        try {
+          await getUserById(assignmentDetail.customerId);
+        } catch (error) {
+          console.error("Error fetching user details:", error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [assignmentDetail]);
+
+  const startConversation = async (receiverId) => {
+    try {
+      const response = await axiosClient.get(
+        `Conversations/${receiverId}?currentUserId=${currentUserId}`
+      );
+      const data = response.data;
+      const userData = userDetail;
+      const customerData = userInfo;
+
+      if (!data.exists) {
+        const createResponse = await axiosClient.post("/Conversations", {
+          userOneId: currentUserId,
+          userTwoId: receiverId,
+        });
+
+        navigation.navigate("ChatScreen", {
+          conversationId: createResponse.data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+          name: userData.fullName,
+          avatar: userData.avatar,
+          userName: customerData?.fullName || "Customer",
+          userAvatar: customerData?.avatar || null,
+        });
+      } else {
+        navigation.navigate("ChatScreen", {
+          conversationId: data.conversationId,
+          userId: receiverId,
+          currentUserId: currentUserId,
+          userName: userData.fullName,
+          userAvatar: userData.avatar,
+          receiverName: customerData?.fullName || "Customer",
+          receiverAvatar: customerData?.avatar || null,
+        });
+      }
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+    }
+  };
 
   const handleCancelPickUp = async () => {
     try {
@@ -302,7 +322,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
       console.log("Confirm pick up error:", error.response?.data);
     }
   };
- 
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
@@ -662,9 +682,13 @@ const OrderPickupDetail = ({ navigation, route }) => {
                   userData: {
                     pickupLongitude: orderDetail.pickupLongitude,
                     pickupLatitude: orderDetail.pickupLatitude,
-                    pickupName: orderDetail.pickupName || assignmentDetail?.fullname,
-                    pickupPhone: orderDetail.pickupPhone || assignmentDetail?.phonenumber,
-                    pickupAddressDetail: orderDetail.pickupAddressDetail || assignmentDetail?.pickupAddress,
+                    pickupName:
+                      orderDetail.pickupName || assignmentDetail?.fullname,
+                    pickupPhone:
+                      orderDetail.pickupPhone || assignmentDetail?.phonenumber,
+                    pickupAddressDetail:
+                      orderDetail.pickupAddressDetail ||
+                      assignmentDetail?.pickupAddress,
                   },
                   showDrivingView: false, // Initially show the overview map
                   showTravelingArrow: true,

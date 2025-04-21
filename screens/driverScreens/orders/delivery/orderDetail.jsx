@@ -24,6 +24,7 @@ import Toast from "react-native-toast-message";
 import usePaymentStore from "../../../../api/store/paymentStore";
 import useAuthStore from "../../../../api/store/authStore";
 import axiosClient from "../../../../api/config/axiosClient";
+import useUserStore from "../../../../api/store/userStore";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (
@@ -137,6 +138,7 @@ const OrderDetail = ({ navigation, route }) => {
 
   const { userDetail } = useAuthStore();
   const currentUserId = userDetail?.userId;
+  const { getUserById, userInfo } = useUserStore();
 
   useEffect(() => {
     if (route.params?.paymentSuccess) {
@@ -185,6 +187,19 @@ const OrderDetail = ({ navigation, route }) => {
     fetchOrderData();
   }, [assignmentDetail]);
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (assignmentDetail && assignmentDetail.customerId) {
+        try {
+          await getUserById(assignmentDetail.customerId);
+        } catch (error) {
+          console.error("Error fetching user details:", error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [assignmentDetail]);
+
   const startConversation = async (receiverId) => {
     try {
       const response = await axiosClient.get(
@@ -192,6 +207,7 @@ const OrderDetail = ({ navigation, route }) => {
       );
       const data = response.data;
       const userData = userDetail;
+      const customerData = userInfo;
 
       if (!data.exists) {
         const createResponse = await axiosClient.post("/Conversations", {
@@ -205,6 +221,8 @@ const OrderDetail = ({ navigation, route }) => {
           currentUserId: currentUserId,
           name: userData.fullName,
           avatar: userData.avatar,
+          userName: customerData?.fullName || "Customer",
+          userAvatar: customerData?.avatar || null,
         });
       } else {
         navigation.navigate("ChatScreen", {
@@ -213,6 +231,8 @@ const OrderDetail = ({ navigation, route }) => {
           currentUserId: currentUserId,
           userName: userData.fullName,
           userAvatar: userData.avatar,
+          receiverName: customerData?.fullName || "Customer",
+          receiverAvatar: customerData?.avatar || null,
         });
       }
     } catch (error) {
@@ -793,9 +813,14 @@ const OrderDetail = ({ navigation, route }) => {
                   userData: {
                     deliveryLongitude: orderDetail.deliveryLongitude,
                     deliveryLatitude: orderDetail.deliveryLatitude,
-                    deliveryName: orderDetail.deliveryName || assignmentDetail?.fullname,
-                    deliveryPhone: orderDetail.deliveryPhone || assignmentDetail?.phonenumber,
-                    deliveryAddressDetail: orderDetail.deliveryAddressDetail || assignmentDetail?.deliveryAddress,
+                    deliveryName:
+                      orderDetail.deliveryName || assignmentDetail?.fullname,
+                    deliveryPhone:
+                      orderDetail.deliveryPhone ||
+                      assignmentDetail?.phonenumber,
+                    deliveryAddressDetail:
+                      orderDetail.deliveryAddressDetail ||
+                      assignmentDetail?.deliveryAddress,
                   },
                   showDrivingView: false, // Initially show the overview map
                   showTravelingArrow: true,
