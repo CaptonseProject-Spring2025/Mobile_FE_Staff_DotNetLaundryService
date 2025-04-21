@@ -22,6 +22,8 @@ import * as ImagePicker from "expo-image-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import usePaymentStore from "../../../../api/store/paymentStore";
+import useAuthStore from "../../../../api/store/authStore";
+import axiosClient from "../../../../api/config/axiosClient";
 
 const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
   return (

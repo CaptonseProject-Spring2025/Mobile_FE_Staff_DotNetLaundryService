@@ -57,6 +57,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
       );
     }
   }, [assignmentList]);
+  
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -360,7 +361,7 @@ const DeliveryList = ({ searchQuery = "" }) => {
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderItem}
-        keyExtractor={(item) => item.orderId.toString()}
+        keyExtractor={(item) => item.assignmentId.toString()}
         refreshing={refreshing}
         onRefresh={() => onRefresh()}
         showsVerticalScrollIndicator={false}

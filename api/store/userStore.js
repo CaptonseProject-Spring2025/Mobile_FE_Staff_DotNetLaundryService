@@ -9,7 +9,7 @@ const STORAGE_KEYS = {
 const useUserStore = create((set, get) => ({
   isLoading: false,
   error: null,
-  userDetails: null,
+  userInfo: null,
   
   // Get user details by userId
   getUserById: async (userId) => {
@@ -24,7 +24,7 @@ const useUserStore = create((set, get) => ({
       const userData = response.data;
       
       set({
-        user: userData,
+        userInfo: userData,
         isLoading: false
       });
       
