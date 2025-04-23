@@ -150,7 +150,7 @@ const AddressNavigateMap = () => {
               newLocation.latitude, newLocation.longitude
             );
 
-            if (distanceMoved > 10) { // if distance moved is more than 5 meters update driver location
+            if (distanceMoved > 2) { // if distance moved is more than 5 meters update driver location
               setDriverLocation(newLocation);
             }
           } else {
@@ -196,7 +196,7 @@ const AddressNavigateMap = () => {
         );
 
         // Only fetch new route if moved more than 10 meters from last fetch
-        shouldFetch = distanceMoved > 10;
+        shouldFetch = distanceMoved > 2;
       }
 
       if (shouldFetch) {
@@ -269,7 +269,7 @@ const AddressNavigateMap = () => {
         newLocation.latitude, newLocation.longitude
       );
 
-      if (distanceMoved > 30) { // Only update if moved more than 30 meters
+      if (distanceMoved > 2) {
         setDriverLocation(newLocation);
         // Trigger line update
         setLineUpdateKey((prev) => prev + 1);

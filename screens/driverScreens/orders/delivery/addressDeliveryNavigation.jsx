@@ -65,6 +65,24 @@ const AddressDeliveryNavigateMap = () => {
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
 
   // Request permission and get current location
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180; // φ in radians
+    const φ2 = (lat2 * Math.PI) / 180; // φ in radians
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
+    const Δλ = ((lon1 - lon1) * Math.PI) / 180; // Δλ in radians
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // haversine formula
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // c is the angular distance in radians
+
+    return R * c; // in meters
+  };
+
+  // Request permission and get current location
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -92,6 +110,7 @@ const AddressDeliveryNavigateMap = () => {
               longitude: userData.deliveryLongitude,
             });
           }
+
           // Initial zoom to driver location
           setTimeout(() => {
             if (cameraRef.current) {
@@ -116,38 +135,6 @@ const AddressDeliveryNavigateMap = () => {
       }
     })();
   }, [userData]);
-
-  // Calculate distance between coordinates in meters using haversine formula
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180; // φ in radians
-    const φ2 = (lat2 * Math.PI) / 180; // φ in radians
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
-    const Δλ = ((lon1 - lat1) * Math.PI) / 180; // Δλ in radians
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // in meters
-  };
-
-  // Start navigation animation if in driving view automatically
-  useEffect(() => {
-    if (isDrivingView && routeCoordinates.length > 0 && duration) {
-      setShowTravelingArrow(true);
-      Animated.timing(arrowPositionRef, {
-        toValue: 1,
-        duration: duration * 60000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isDrivingView, routeCoordinates.length, duration]);
-
 
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
@@ -176,8 +163,7 @@ const AddressDeliveryNavigateMap = () => {
               newLocation.longitude
             );
 
-            if (distanceMoved > 10) {
-              // if distance moved is more than 10 meters update driver location
+            if (distanceMoved > 2) {
               setDriverLocation(newLocation);
             }
           } else {
@@ -194,7 +180,7 @@ const AddressDeliveryNavigateMap = () => {
     };
   }, [permissionStatus]);
 
-  // Force regular updates of the direct line
+  // Force regular updates of the direct line but less frequently
   useEffect(() => {
     const updateInterval = setInterval(() => {
       setForceUpdate((prev) => prev + 1);
@@ -210,7 +196,7 @@ const AddressDeliveryNavigateMap = () => {
     }
   }, [forceUpdate, currentDriverLocation, userLocation]);
 
-  // Get route when either location changes
+  // Get route when either location changes significantly
   useEffect(() => {
     if (driverLocation && userLocation && !isFetchingRoute) {
       // Check if we need to fetch a new route
@@ -223,9 +209,8 @@ const AddressDeliveryNavigateMap = () => {
           driverLocation.latitude,
           driverLocation.longitude
         );
-
         // Only fetch new route if moved more than 10 meters from last fetch
-        shouldFetch = distanceMoved > 10;
+        shouldFetch = distanceMoved > 2;
       }
 
       if (shouldFetch) {
@@ -300,8 +285,7 @@ const AddressDeliveryNavigateMap = () => {
         newLocation.longitude
       );
 
-      if (distanceMoved > 10) {
-        // if move 10 meters update driver location
+      if (distanceMoved > 2) {
         setDriverLocation(newLocation);
         // Trigger line update
         setLineUpdateKey((prev) => prev + 1);
@@ -311,6 +295,19 @@ const AddressDeliveryNavigateMap = () => {
       setLineUpdateKey((prev) => prev + 1);
     }
   };
+
+  // Start navigation animation if in driving view automatically
+  useEffect(() => {
+    if (isDrivingView && routeCoordinates.length > 0 && duration) {
+      setShowTravelingArrow(true);
+      Animated.timing(arrowPositionRef, {
+        toValue: 1,
+        duration: duration * 60000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrivingView, routeCoordinates.length, duration]);
 
   // // Add this useEffect to handle zoom changes
   if (permissionStatus === "denied") {

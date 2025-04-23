@@ -824,6 +824,7 @@ const OrderDetail = ({ navigation, route }) => {
                   },
                   showDrivingView: false, // Initially show the overview map
                   showTravelingArrow: true,
+                  orderId: orderDetail.orderId,
                 })
               }
               className="flex-row items-center gap-x-2"
