@@ -148,15 +148,6 @@ const AddressDeliveryNavigateMap = () => {
     }
   }, [isDrivingView, routeCoordinates.length, duration]);
 
-  const centerOnDriverLocation = () => {
-    if (cameraRef.current && driverLocation) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
-        zoomLevel: 15,
-        animationDuration: 1000,
-      });
-    }
-  };
 
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
@@ -376,18 +367,6 @@ const AddressDeliveryNavigateMap = () => {
               showsUserHeadingIndicator={isDrivingView}
               onUpdate={handleLocationUpdate}
             />
-
-            {!isDrivingView && driverLocation && (
-              <MapboxGL.PointAnnotation
-                id="driverLocation"
-                coordinate={[driverLocation.longitude, driverLocation.latitude]}
-                title="You"
-              >
-                <View style={styles.driverMarker}>
-                  <View style={styles.driverMarkerInner} />
-                </View>
-              </MapboxGL.PointAnnotation>
-            )}
 
             {userLocation && (
               <MapboxGL.PointAnnotation
