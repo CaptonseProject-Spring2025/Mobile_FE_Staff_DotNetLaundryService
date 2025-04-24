@@ -18,7 +18,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
-import trackingService from '../../../../api/services/trackingService';
+import trackingService from "../../../../api/services/trackingService";
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -165,7 +165,12 @@ const AddressDeliveryNavigateMap = () => {
           setCurrentLocation(newLocation);
 
           // send live location over SignalR
-          trackingService.sendLocation(location.coords.latitude, location.coords.longitude);
+          if (orderId) {
+            trackingService.sendLocation(
+              location.coords.latitude,
+              location.coords.longitude
+            );
+          }
 
           if (driverLocation) {
             const distanceMoved = calculateDistance(
@@ -190,7 +195,7 @@ const AddressDeliveryNavigateMap = () => {
         locationSubscription.then((sub) => sub.remove());
       }
     };
-  }, [permissionStatus]);
+  }, [permissionStatus, orderId]);
 
   // Force regular updates of the direct line but less frequently
   useEffect(() => {

@@ -19,6 +19,7 @@ import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
+import trackingService from '../../../../api/services/trackingService';
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -28,7 +29,7 @@ LogBox.ignoreLogs([
 
 const AddressNavigateMap = () => {
   const route = useRoute();
-  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow } = route.params || {};
+  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow, orderId } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
     "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -125,6 +126,15 @@ const AddressNavigateMap = () => {
     })();
   }, [userData]);
 
+  // start SignalR connection when mounting
+  useEffect(() => {
+    if (orderId) {
+      trackingService.startConnection(orderId);
+      trackingService.onError(console.error);
+      return () => trackingService.stopConnection();
+    }
+  }, [orderId]);
+
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
     let locationSubscription;
@@ -143,6 +153,11 @@ const AddressNavigateMap = () => {
           };
           setCurrentDriverLocation(newLocation);
           setCurrentLocation(newLocation);
+
+          // send live location over SignalR
+          if (orderId) {
+            trackingService.sendLocation(location.coords.latitude, location.coords.longitude);
+          }
 
           if (driverLocation) {
             const distanceMoved = calculateDistance(
@@ -165,7 +180,7 @@ const AddressNavigateMap = () => {
         locationSubscription.then((sub) => sub.remove());
       }
     };
-  }, [permissionStatus]);
+  }, [permissionStatus, orderId]);
 
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
@@ -347,17 +362,6 @@ const AddressNavigateMap = () => {
               onUpdate={handleLocationUpdate}
             />
 
-            {!isDrivingView && driverLocation && (
-              <MapboxGL.PointAnnotation
-                id="driverLocation"
-                coordinate={[driverLocation.longitude, driverLocation.latitude]}
-                title="You"
-              >
-                <View style={styles.driverMarker}>
-                  <View style={styles.driverMarkerInner} />
-                </View>
-              </MapboxGL.PointAnnotation>
-            )}
 
             {userLocation && (
               <MapboxGL.PointAnnotation
