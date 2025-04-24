@@ -12,12 +12,13 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import MapboxGL, { NativeUserLocation } from "@rnmapbox/maps";
+import MapboxGL from "@rnmapbox/maps";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { Avatar, Card } from "react-native-paper";
+import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
+import trackingService from '../../../../api/services/trackingService';
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -31,6 +32,7 @@ const AddressDeliveryNavigateMap = () => {
     userData,
     showDrivingView: initialDrivingView,
     showTravelingArrow: initialTravelingArrow,
+    orderId,
   } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
@@ -63,6 +65,13 @@ const AddressDeliveryNavigateMap = () => {
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
+
+  // start SignalR connection when mounting
+  useEffect(() => {
+    trackingService.startConnection(orderId);
+    trackingService.onError(console.error);
+    return () => trackingService.stopConnection();
+  }, [orderId]);
 
   // Request permission and get current location
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -145,7 +154,7 @@ const AddressDeliveryNavigateMap = () => {
         {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 3000,
-          distanceInterval: 10,
+          distanceInterval: 2,
         },
         (location) => {
           const newLocation = {
@@ -154,6 +163,9 @@ const AddressDeliveryNavigateMap = () => {
           };
           setCurrentDriverLocation(newLocation);
           setCurrentLocation(newLocation);
+
+          // send live location over SignalR
+          trackingService.sendLocation(location.coords.latitude, location.coords.longitude);
 
           if (driverLocation) {
             const distanceMoved = calculateDistance(

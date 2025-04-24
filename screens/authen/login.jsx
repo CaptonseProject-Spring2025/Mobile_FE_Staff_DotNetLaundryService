@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   inputPassword: {
     height: 40,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
   },
   passwordContainer: {
     flexDirection: "row",
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#ccc",
     borderRadius: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
   },
   loginButton: {
     backgroundColor: "#63B35C",
