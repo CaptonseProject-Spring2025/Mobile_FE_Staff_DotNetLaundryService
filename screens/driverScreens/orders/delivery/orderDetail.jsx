@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Linking,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
@@ -26,89 +27,98 @@ import useAuthStore from "../../../../api/store/authStore";
 import axiosClient from "../../../../api/config/axiosClient";
 import useUserStore from "../../../../api/store/userStore";
 
-const PaymentMethod = React.memo(({ selectedPayment, setSelectedPayment }) => {
-  return (
-    <View style={styles.paymentContainer}>
-      <TouchableOpacity
-        style={[
-          styles.paymentOptionNew,
-          selectedPayment === "cash" && { borderWidth: 1 },
-        ]}
-        onPress={() => setSelectedPayment("cash")}
-      >
-        <View
-          style={{
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            gap: 5,
-          }}
+
+const PaymentMethod = React.memo(
+  ({ selectedPayment, setSelectedPayment, disabled }) => {
+    // Add disabled prop
+    return (
+      <View style={styles.paymentContainer}>
+        <TouchableOpacity
+          style={[
+            styles.paymentOptionNew,
+            selectedPayment === "cash" && { borderWidth: 1 },
+            disabled && { opacity: 0.5 }, // Add opacity when disabled
+          ]}
+          onPress={() => !disabled && setSelectedPayment("cash")} // Disable onPress if disabled
+          disabled={disabled} // Add disabled prop
         >
           <View
-            style={[
-              styles.radioCircle,
-              {
-                borderColor: selectedPayment === "cash" ? "#02A257" : "#6C7072",
-                borderWidth: 2,
-              },
-            ]}
-          ></View>
-
-          <Text
             style={{
-              color: selectedPayment === "cash" ? "#02A257" : "#6C7072",
-              fontSize: 16,
-              fontWeight: "500",
-              textAlign: "center",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              gap: 5,
             }}
           >
-            Tiền mặt
-          </Text>
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.paymentOptionNew,
-          selectedPayment === "transfer" && { borderWidth: 1 },
-        ]}
-        onPress={() => setSelectedPayment("transfer")}
-      >
-        <View
-          style={{
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            gap: 5,
-          }}
+            <View
+              style={[
+                styles.radioCircle,
+                {
+                  borderColor:
+                    selectedPayment === "cash" ? "#02A257" : "#6C7072",
+                  borderWidth: 2,
+                },
+              ]}
+            ></View>
+
+            <Text
+              style={{
+                color: selectedPayment === "cash" ? "#02A257" : "#6C7072",
+                fontSize: 16,
+                fontWeight: "500",
+                textAlign: "center",
+              }}
+            >
+              Tiền mặt
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.paymentOptionNew,
+            selectedPayment === "transfer" && { borderWidth: 1 },
+            disabled && { opacity: 0.5 }, // Add opacity when disabled
+          ]}
+          onPress={() => !disabled && setSelectedPayment("transfer")} // Disable onPress if disabled
+          disabled={disabled} // Add disabled prop
         >
           <View
-            style={[
-              styles.radioCircle,
-              {
-                borderColor:
-                  selectedPayment === "transfer" ? "#02A257" : "#6C7072",
-                borderWidth: 2,
-              },
-            ]}
-          ></View>
-
-          <Text
             style={{
-              color: selectedPayment === "transfer" ? "#02A257" : "#6C7072",
-              fontSize: 16,
-              fontWeight: "500",
-              textAlign: "center",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              gap: 5,
             }}
           >
-            Chuyển khoản
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
-});
+            <View
+              style={[
+                styles.radioCircle,
+                {
+                  borderColor:
+                    selectedPayment === "transfer" ? "#02A257" : "#6C7072",
+                  borderWidth: 2,
+                },
+              ]}
+            ></View>
+
+            <Text
+              style={{
+                color: selectedPayment === "transfer" ? "#02A257" : "#6C7072",
+                fontSize: 16,
+                fontWeight: "500",
+                textAlign: "center",
+              }}
+            >
+              Chuyển khoản
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
 
 const OrderDetail = ({ navigation, route }) => {
   const [selectedPayment, setSelectedPayment] = useState("cash");
@@ -143,6 +153,7 @@ const OrderDetail = ({ navigation, route }) => {
   useEffect(() => {
     if (route.params?.paymentSuccess) {
       setPaymentSuccess(true);
+      setSelectedPayment("transfer"); // Set payment method to transfer on success
     }
   }, [route.params?.paymentSuccess]);
 
@@ -457,6 +468,18 @@ const OrderDetail = ({ navigation, route }) => {
     }
   };
 
+ const handleCall = () => {
+  let phoneNumber = assignmentDetail.phonenumber;
+  if (Platform.OS === "android") {
+    phoneNumber = `tel:${phoneNumber}`;
+  } else {
+    phoneNumber = `telprompt:${phoneNumber}`;
+  }
+  Linking.openURL(phoneNumber).catch((err) =>
+    console.error("Error opening dialer:", err)
+  );
+ }
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
@@ -787,7 +810,9 @@ const OrderDetail = ({ navigation, route }) => {
               </Text>
             </View>
             <View style={styles.userInfoRow}>
-              <Ionicons name="call-outline" size={20} color="#02A257" />
+              <TouchableOpacity onPress={handleCall}>
+                <Ionicons name="call-outline" size={20} color="#02A257" />
+              </TouchableOpacity>
               <Text style={styles.userInfoLabel}>Số điện thoại:</Text>
               <Text style={styles.userInfoValue}>
                 {assignmentDetail?.phonenumber || "Chưa có thông tin"}
@@ -928,6 +953,7 @@ const OrderDetail = ({ navigation, route }) => {
           <PaymentMethod
             selectedPayment={selectedPayment}
             setSelectedPayment={setSelectedPayment}
+            disabled={paymentSuccess} // Pass paymentSuccess to disable payment selection
           />
         </View>
         <View
@@ -944,19 +970,32 @@ const OrderDetail = ({ navigation, route }) => {
           style={[
             styles.button,
             styles.cancelButton,
-            isLoadingCancelDelivery && { backgroundColor: "#6c757d" },
+            (isLoadingCancelDelivery || paymentSuccess) && {
+              backgroundColor: "#e9ecef",
+              borderColor: "#ced4da",
+            }, // Adjusted disabled style
+            paymentSuccess && { opacity: 0.5 }, // Add opacity when payment is successful
           ]}
           onPress={() => setCancelModalVisible(true)}
-          disabled={isLoadingCancelDelivery || paymentSuccess}
+          disabled={isLoadingCancelDelivery || paymentSuccess} // Keep existing disable logic
         >
           {isLoadingCancelDelivery ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color="#6c757d" /> // Adjusted color
           ) : (
-            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+            <Text
+              style={[
+                styles.cancelButtonText,
+                paymentSuccess && { color: "#6c757d" },
+              ]}
+            >
+              Hủy đơn
+            </Text> // Adjusted text color when disabled
           )}
         </TouchableOpacity>
 
-        {selectedPayment === "cash" || paymentSuccess ? (
+        {/* Conditional rendering based on payment method or success */}
+        {selectedPayment === "cash" ||
+        (paymentSuccess && selectedPayment === "cash") ? ( // Show complete if cash selected OR if payment was successful via cash (though success implies transfer here)
           <TouchableOpacity
             style={[
               styles.button,
@@ -973,19 +1012,30 @@ const OrderDetail = ({ navigation, route }) => {
             )}
           </TouchableOpacity>
         ) : (
+          // Show Pay/Complete based on transfer selection or success
           <TouchableOpacity
             style={[
               styles.button,
               styles.completeButton,
-              isLoadingPayment && { backgroundColor: "#6c757d" },
+              (isLoadingPayment || isLoadingConfirmDelivery) && {
+                backgroundColor: "#6c757d",
+              },
             ]}
-            onPress={handleMakePayment}
-            disabled={isLoadingPayment}
+            // If payment is successful, show 'Complete Order', otherwise show 'Pay'
+            onPress={
+              paymentSuccess
+                ? () => setCompleteModalVisible(true)
+                : handleMakePayment
+            }
+            disabled={isLoadingPayment || isLoadingConfirmDelivery}
           >
-            {isLoadingPayment ? (
+            {isLoadingPayment || isLoadingConfirmDelivery ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.completeButtonText}>Thanh toán</Text>
+              // Change button text based on payment success
+              <Text style={styles.completeButtonText}>
+                {paymentSuccess ? "Hoàn thành đơn" : "Thanh toán"}
+              </Text>
             )}
           </TouchableOpacity>
         )}
