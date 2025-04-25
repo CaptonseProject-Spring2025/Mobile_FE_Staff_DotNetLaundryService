@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -6,95 +6,172 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import useAuthStore from "../../../api/store/authStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import useOrderStore from "../../../api/store/orderStore";
 
 const { width, height } = Dimensions.get("window");
 
 export default function DriverMenu({ navigation }) {
   const { userDetail } = useAuthStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { 
+    assignmentList, 
+    fetchAssignmentList 
+  } = useOrderStore();
+
+  // Filter orders by status
+  const pickupOrders = assignmentList?.filter(
+    order => order.status === "ASSIGNED_PICKUP" && 
+    (order.currentStatus === "SCHEDULED_PICKUP" || order.currentStatus === "PICKINGUP")
+  ) || [];
+
+  const deliveryOrders = assignmentList?.filter(
+    order => order.status === "ASSIGNED_DELIVERY" && 
+    (order.currentStatus === "SCHEDULED_DELIVERY" || order.currentStatus === "DELIVERING")
+  ) || [];
+
+  const confirmOrders = assignmentList?.filter(
+    order => order.status === "ASSIGNED_PICKUP" && 
+    order.currentStatus === "PICKED_UP_PENDING"
+  ) || [];
+
+  const loadAllOrders = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchAssignmentList();
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    await loadAllOrders();
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAllOrders();
+    }, [])
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffff" }}>
-      {/* Header with greeting and notification icon */}
-      <View style={styles.header}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: width * 0.9,
-          }}
-        >
-          <View>
-            <Text style={{ fontSize: 20, color: "#fff", fontWeight: "bold" }}>
-              Xin chào
-            </Text>
-            <Text style={{ fontSize: 24, color: "#fff", fontWeight: "bold" }}>
-              {userDetail?.fullName}
-            </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={["#2FA060"]}
+          />
+        }
+      >
+        {/* Header with greeting and notification icon */}
+        <View style={styles.header}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: width * 0.9,
+            }}
+          >
+            <View>
+              <Text style={{ fontSize: 20, color: "#fff", fontWeight: "bold" }}>
+                Xin chào
+              </Text>
+              <Text style={{ fontSize: 24, color: "#fff", fontWeight: "bold" }}>
+                {userDetail?.fullName}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Main content with order sections */}
-      <View style={styles.mainContent}>
-        <Text style={styles.sectionTitle}>Đơn hàng</Text>
+        {/* Main content with order sections */}
+        <View style={styles.mainContent}>
+          <Text style={styles.sectionTitle}>Đơn hàng</Text>
 
-        {/* Order pickup section */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate("DriverPickupScreen")}
-        >
-          <View style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}>
-            <MaterialIcons name="local-shipping" size={28} color="#fff" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Đơn nhận</Text>
-            <Text style={styles.menuDescription}>
-              Danh sách đơn hàng cần đi lấy từ khách hàng
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-        </TouchableOpacity>
+          {/* Order pickup section */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("DriverPickupScreen")}
+          >
+            <View style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}>
+              <MaterialIcons name="local-shipping" size={28} color="#fff" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <View style={styles.menuTitleContainer}>
+                <Text style={styles.menuTitle}>Đơn nhận</Text>
+                {pickupOrders.length > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: "#2FA060" }]}>
+                    <Text style={styles.countText}>{pickupOrders.length}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.menuDescription}>
+                Danh sách đơn hàng cần đi lấy từ khách hàng
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+          </TouchableOpacity>
 
-        {/* Order delivery section */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate("DriverDeliveryScreen")}
-        >
-          <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
-            <MaterialIcons name="local-shipping" size={28} color="#fff" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Đơn giao</Text>
-            <Text style={styles.menuDescription}>
-              Danh sách đơn hàng cần giao đến khách hàng
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-        </TouchableOpacity>
+          {/* Order delivery section */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("DriverDeliveryScreen")}
+          >
+            <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
+              <MaterialIcons name="local-shipping" size={28} color="#fff" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <View style={styles.menuTitleContainer}>
+                <Text style={styles.menuTitle}>Đơn giao</Text>
+                {deliveryOrders.length > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: "#4A6FA5" }]}>
+                    <Text style={styles.countText}>{deliveryOrders.length}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.menuDescription}>
+                Danh sách đơn hàng cần giao đến khách hàng
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+          </TouchableOpacity>
 
-        {/* Order confirm section */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate("ConfirmPickup")}
-        >
-          <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
-            <Ionicons name="list-outline" size={28} color="#fff" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>
-              đơn hàng cần xác nhận đã lấy hàng
-            </Text>
-            <Text style={styles.menuDescription}>
-              Danh sách đơn hàng cần xác nhận đã lấy hàng
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
-        </TouchableOpacity>
-      </View>
+          {/* Order confirm section */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("ConfirmPickup")}
+          >
+          <View style={[styles.iconBackground, { backgroundColor: "#037bfc" }]}>
+              <Ionicons name="list-outline" size={28} color="#fff" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <View style={styles.menuTitleContainer}>
+                <Text style={styles.menuTitle}>Xác nhận đã lấy hàng</Text>
+                {confirmOrders.length > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: "#037bfc" }]}>
+                    <Text style={styles.countText}>{confirmOrders.length}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.menuDescription}>
+                Danh sách đơn hàng cần xác nhận đã lấy hàng
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -133,6 +210,7 @@ const styles = StyleSheet.create({
   mainContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 30,
   },
   sectionTitle: {
     fontSize: 24,
@@ -164,6 +242,11 @@ const styles = StyleSheet.create({
   menuTextContainer: {
     flex: 1,
   },
+  menuTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   menuTitle: {
     fontSize: 16,
     fontWeight: "bold",
@@ -173,6 +256,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     marginTop: 4,
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  countText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   Flowcontainer: {
     position: "absolute",
