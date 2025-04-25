@@ -255,6 +255,31 @@ const AddressNavigateMap = () => {
     }
   }, [driverLocation, userLocation]);
 
+  //follow driver
+  useEffect(() => {
+    if (isDrivingView && cameraRef.current) {
+      // Set camera to follow user with heading when in driving mode
+      cameraRef.current.setCamera({
+        followUserLocation: true,
+        followUserMode: MapboxGL.UserTrackingModes.FollowWithCourse,
+        followPitch: 60,
+        pitch: 60,
+        zoomLevel: 17,
+        animationDuration: 1000,
+      });
+    } else if (!isDrivingView && cameraRef.current && driverLocation) {
+      // Reset camera when exiting driving mode
+      cameraRef.current.setCamera({
+        centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
+        followUserLocation: false,
+        followUserMode: MapboxGL.UserTrackingModes.None,
+        zoomLevel: 12,
+        pitch: 0,
+        animationDuration: 1000,
+      });
+    }
+  }, [isDrivingView, driverLocation]);
+
   const fetchDirectionsRoute = async () => {
     if (isFetchingRoute) return;
 

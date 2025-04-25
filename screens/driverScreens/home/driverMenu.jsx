@@ -9,7 +9,7 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 import useAuthStore from "../../../api/store/authStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -20,26 +20,33 @@ const { width, height } = Dimensions.get("window");
 export default function DriverMenu({ navigation }) {
   const { userDetail } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { 
-    assignmentList, 
-    fetchAssignmentList 
-  } = useOrderStore();
+  const { assignmentList, fetchAssignmentList } = useOrderStore();
 
   // Filter orders by status
-  const pickupOrders = assignmentList?.filter(
-    order => order.status === "ASSIGNED_PICKUP" && 
-    (order.currentStatus === "SCHEDULED_PICKUP" || order.currentStatus === "PICKINGUP")
-  ) || [];
+  const pickupOrders =
+    assignmentList?.filter(
+      (order) =>
+        order.status === "ASSIGNED_PICKUP" &&
+        (order.currentStatus === "SCHEDULED_PICKUP" ||
+          order.currentStatus === "PICKINGUP")
+    ) || [];
 
-  const deliveryOrders = assignmentList?.filter(
-    order => order.status === "ASSIGNED_DELIVERY" && 
-    (order.currentStatus === "SCHEDULED_DELIVERY" || order.currentStatus === "DELIVERING")
-  ) || [];
+  const deliveryOrders =
+    assignmentList?.filter(
+      (order) =>
+        order.status === "ASSIGNED_DELIVERY" &&
+        (order.currentStatus === "SCHEDULED_DELIVERY" ||
+          order.currentStatus === "DELIVERING")
+    ) || [];
 
-  const confirmOrders = assignmentList?.filter(
-    order => order.status === "ASSIGNED_PICKUP" && 
-    order.currentStatus === "PICKED_UP_PENDING"
-  ) || [];
+  const confirmOrders =
+    assignmentList?.filter(
+      (order) =>
+        (order.status === "ASSIGNED_PICKUP" &&
+          order.currentStatus === "PICKEDUP") ||
+        (order.status === "ASSIGNED_DELIVERY" &&
+          order.currentStatus === "DELIVERED")
+    ) || [];
 
   const loadAllOrders = async () => {
     setIsRefreshing(true);
@@ -104,14 +111,18 @@ export default function DriverMenu({ navigation }) {
             style={styles.menuItem}
             onPress={() => navigation.navigate("DriverPickupScreen")}
           >
-            <View style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}>
+            <View
+              style={[styles.iconBackground, { backgroundColor: "#2FA060" }]}
+            >
               <MaterialIcons name="local-shipping" size={28} color="#fff" />
             </View>
             <View style={styles.menuTextContainer}>
               <View style={styles.menuTitleContainer}>
                 <Text style={styles.menuTitle}>Đơn nhận</Text>
                 {pickupOrders.length > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: "#2FA060" }]}>
+                  <View
+                    style={[styles.countBadge, { backgroundColor: "#2FA060" }]}
+                  >
                     <Text style={styles.countText}>{pickupOrders.length}</Text>
                   </View>
                 )}
@@ -128,15 +139,21 @@ export default function DriverMenu({ navigation }) {
             style={styles.menuItem}
             onPress={() => navigation.navigate("DriverDeliveryScreen")}
           >
-            <View style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}>
+            <View
+              style={[styles.iconBackground, { backgroundColor: "#4A6FA5" }]}
+            >
               <MaterialIcons name="local-shipping" size={28} color="#fff" />
             </View>
             <View style={styles.menuTextContainer}>
               <View style={styles.menuTitleContainer}>
                 <Text style={styles.menuTitle}>Đơn giao</Text>
                 {deliveryOrders.length > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: "#4A6FA5" }]}>
-                    <Text style={styles.countText}>{deliveryOrders.length}</Text>
+                  <View
+                    style={[styles.countBadge, { backgroundColor: "#4A6FA5" }]}
+                  >
+                    <Text style={styles.countText}>
+                      {deliveryOrders.length}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -152,14 +169,18 @@ export default function DriverMenu({ navigation }) {
             style={styles.menuItem}
             onPress={() => navigation.navigate("ConfirmPickup")}
           >
-          <View style={[styles.iconBackground, { backgroundColor: "#037bfc" }]}>
+            <View
+              style={[styles.iconBackground, { backgroundColor: "#037bfc" }]}
+            >
               <Ionicons name="list-outline" size={28} color="#fff" />
             </View>
             <View style={styles.menuTextContainer}>
               <View style={styles.menuTitleContainer}>
                 <Text style={styles.menuTitle}>Xác nhận đã lấy hàng</Text>
                 {confirmOrders.length > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: "#037bfc" }]}>
+                  <View
+                    style={[styles.countBadge, { backgroundColor: "#037bfc" }]}
+                  >
                     <Text style={styles.countText}>{confirmOrders.length}</Text>
                   </View>
                 )}
