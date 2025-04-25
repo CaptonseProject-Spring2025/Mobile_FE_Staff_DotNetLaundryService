@@ -9,13 +9,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import {  Avatar } from "react-native-paper";
+import { Avatar } from "react-native-paper";
 import useAuthStore from "../../../api/store/authStore";
+import useNotificationStore from "../../../api/store/notificationStore";
 
 export default function ProfileMenu({ navigation }) {
-  
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, logout, userDetail } = useAuthStore();
+  const { deleteToken, clearNotifications } = useNotificationStore();
 
   // Initialize auth state and fetch user details when component mounts
   useEffect(() => {
@@ -33,7 +34,16 @@ export default function ProfileMenu({ navigation }) {
         onPress: async () => {
           try {
             setIsLoading(true);
+            //Delete the notification token
+            if (userDetail?.userId) {
+              await deleteToken(userDetail.userId);
+            }
+
+            // Clear notifications
+            clearNotifications();
+            // Logout the user
             await logout();
+
           } catch (error) {
             console.error("Error during logout:", error);
             Alert.alert("Lỗi", "Đã xảy ra lỗi khi đăng xuất.");
@@ -77,7 +87,7 @@ export default function ProfileMenu({ navigation }) {
       <View
         style={{
           flexDirection: "column",
-          alignItems: "center", 
+          alignItems: "center",
           justifyContent: "center",
           width: "100%",
           paddingVertical: 20,
@@ -105,15 +115,15 @@ export default function ProfileMenu({ navigation }) {
         <View
           style={{
             flexDirection: "column",
-            alignItems: "center", 
+            alignItems: "center",
             paddingTop: 15,
           }}
         >
           <Text
             style={{
-              fontSize: 30, 
+              fontSize: 30,
               fontWeight: "bold",
-              color: "#000000", 
+              color: "#000000",
               marginBottom: 5,
             }}
           >
@@ -121,8 +131,8 @@ export default function ProfileMenu({ navigation }) {
           </Text>
           <Text
             style={{
-              fontSize: 16, 
-              color: "#000000", 
+              fontSize: 16,
+              color: "#000000",
               marginBottom: 5,
             }}
           >
@@ -130,7 +140,7 @@ export default function ProfileMenu({ navigation }) {
           </Text>
           <Text
             style={{
-              fontSize: 16, 
+              fontSize: 16,
               color: "#000000",
             }}
           >
@@ -183,12 +193,12 @@ export default function ProfileMenu({ navigation }) {
 
 const styles = StyleSheet.create({
   editButton: {
-    position: "absolute", 
+    position: "absolute",
     bottom: 0,
     right: 0,
     backgroundColor: "#63B35C",
-    borderRadius: 50, 
-    padding: 8, 
+    borderRadius: 50,
+    padding: 8,
     justifyContent: "center",
     alignItems: "center",
   },

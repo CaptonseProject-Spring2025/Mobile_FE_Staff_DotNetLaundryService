@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import useAuthStore from "../../api/store/authStore";
-
+import useNotificationStore from "../../api/store/notificationStore";
 const { width } = Dimensions.get("window");
 
 export default function LoginScreen({ navigation }) {
@@ -25,6 +25,7 @@ export default function LoginScreen({ navigation }) {
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
   const { login, isLoading } = useAuthStore();
+  const { saveToken } = useNotificationStore();
 
   const validatePhone = () => {
     if (!phoneNumber) {
@@ -70,26 +71,49 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     setLoginError("");
+    setIsLoading(true); // Start loading
+
     const isPhoneValid = validatePhone();
     const isPasswordValid = validatePassword();
 
     if (!isPhoneValid || !isPasswordValid) {
+      setIsLoading(false);
       return;
     }
 
-    const result = await login(phoneNumber, password);
+    try {
+      const result = await login(phoneNumber, password);
+      if (!result || !result.success) {
+        setLoginError(result?.message || "Sai số điện thoại hoặc mật khẩu");
+      } else {
+        const userRole = useAuthStore.getState().userDetail?.role;
 
-    if (!result.success) {
-      // Show error message
-      setLoginError("Sai số điện thoại hoặc mật khẩu");
-    }
-    // Check if user is a Customer after successful login
-    const userRole = useAuthStore.getState().userDetail?.role;
-    if (userRole === "Customer" || userRole === "Admin") {
-      // Log out immediately if user is a Customer
-      const logout = useAuthStore.getState().logout;
-      await logout();
-      Alert.alert("Bạn không có quyền đăng nhập vào ứng dụng này");
+        if (userRole === "Customer" || userRole === "Admin") {
+          // User has an invalid role for this app
+          const logout = useAuthStore.getState().logout;
+          await logout(); // Log them out immediately
+          Alert.alert(
+            "Lỗi Đăng Nhập",
+            "Bạn không có quyền đăng nhập vào ứng dụng này."
+          );
+        } else {
+          try {
+            await saveToken(result.userId);
+          } catch (tokenError) {
+            console.error("Token save error:", tokenError);
+            setLoginError("Đã xảy ra lỗi khi lưu thông tin đăng nhập.");
+          }
+        }
+      }
+    } catch (error) {
+      // Catch errors specifically from the login API call
+      console.error("Login API error:", error);
+      setLoginError(
+        "Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại."
+      );
+    } finally {
+      // This block will always execute, ensuring loading state is reset
+      setIsLoading(false);
     }
   };
 

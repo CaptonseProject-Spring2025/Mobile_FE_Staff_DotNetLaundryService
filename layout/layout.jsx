@@ -6,8 +6,11 @@ import { AuthenNavigation } from "../navigation/authenNavigation/authenNavigatio
 import DriverBottomNavigationTab from "../navigation/driverNavigation/driverBottomNavigation.js";
 import StaffBottomNavigationTab from "../navigation/staffNavigation/staffBottomNavigation.js";
 import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import useAuthStore from "../api/store/authStore";
 import PayosWebView from "../screens/driverScreens/orders/payment/payosWebView.jsx";
+import messaging from "@react-native-firebase/messaging";
+import { Alert, Platform } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +41,51 @@ const Layout = () => {
     }
   };
 
+   // Request notification permissions
+   const requestNotificationPermission = async () => {
+    try {
+      // Check if device is capable of receiving notifications
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      // Only ask for permission if not already granted
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        Alert.alert(
+          "Notification Permission",
+          "Enable notifications to receive updates about your laundry orders.",
+          [{ text: "OK" }]
+        );
+        return false;
+      }
+
+      // For Android, set notification channel (required for Android 8.0+)
+      if (Platform.OS === "android") {
+        Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+        });
+      }
+
+      // Request Firebase messaging permission for iOS (Android doesn't need this)
+      if (Platform.OS === "ios") {
+        await messaging().requestPermission();
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Initialize auth state with better error handling
     const initApp = async () => {
@@ -47,6 +95,7 @@ const Layout = () => {
 
         // Request permissions
         await requestLocationPermission();
+        await requestNotificationPermission();
 
         // Initialize auth
         await initialize();
