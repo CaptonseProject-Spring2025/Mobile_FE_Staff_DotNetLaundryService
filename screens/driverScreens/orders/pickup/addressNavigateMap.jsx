@@ -19,7 +19,7 @@ import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { Card } from "react-native-paper";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
-import trackingService from '../../../../api/services/trackingService';
+import trackingService from "../../../../api/services/trackingService";
 
 LogBox.ignoreLogs([
   "ViewTagResolver",
@@ -29,7 +29,12 @@ LogBox.ignoreLogs([
 
 const AddressNavigateMap = () => {
   const route = useRoute();
-  const { userData, showDrivingView: initialDrivingView, showTravelingArrow: initialTravelingArrow, orderId } = route.params || {};
+  const {
+    userData,
+    showDrivingView: initialDrivingView,
+    showTravelingArrow: initialTravelingArrow,
+    orderId,
+  } = route.params || {};
 
   const MAPBOX_ACCESS_TOKEN =
     "pk.eyJ1IjoidGhhbmhidCIsImEiOiJjbThrY3U3cm4wOWliMm5zY2YxZHphcGhxIn0.XFTGLomzaK65jyUYJCLUZw";
@@ -42,9 +47,13 @@ const AddressNavigateMap = () => {
   const [routeGeoJSON, setRouteGeoJSON] = useState(null);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
-  const [isDrivingView, setIsDrivingView] = useState(initialDrivingView || false);
+  const [isDrivingView, setIsDrivingView] = useState(
+    initialDrivingView || false
+  );
   const [permissionStatus, setPermissionStatus] = useState(null);
-  const [showTravelingArrow, setShowTravelingArrow] = useState(initialTravelingArrow || false);
+  const [showTravelingArrow, setShowTravelingArrow] = useState(
+    initialTravelingArrow || false
+  );
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
@@ -69,8 +78,7 @@ const AddressNavigateMap = () => {
 
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // haversine formula
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // haversine formula
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // c is the angular distance in radians
 
     return R * c; // in meters
@@ -139,11 +147,13 @@ const AddressNavigateMap = () => {
   useEffect(() => {
     let locationSubscription;
 
+    let locationSendInterval;
+
     if (permissionStatus === "granted") {
       locationSubscription = Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 3000, 
+          timeInterval: 3000,
           distanceInterval: 10,
         },
         (location) => {
@@ -156,16 +166,22 @@ const AddressNavigateMap = () => {
 
           // send live location over SignalR
           if (orderId) {
-            trackingService.sendLocation(location.coords.latitude, location.coords.longitude);
+            trackingService.sendLocation(
+              location.coords.latitude,
+              location.coords.longitude
+            );
           }
 
           if (driverLocation) {
             const distanceMoved = calculateDistance(
-              driverLocation.latitude, driverLocation.longitude,
-              newLocation.latitude, newLocation.longitude
+              driverLocation.latitude,
+              driverLocation.longitude,
+              newLocation.latitude,
+              newLocation.longitude
             );
 
-            if (distanceMoved > 2) { // if distance moved is more than 5 meters update driver location
+            if (distanceMoved > 2) {
+              // if distance moved is more than 5 meters update driver location
               setDriverLocation(newLocation);
             }
           } else {
@@ -173,14 +189,31 @@ const AddressNavigateMap = () => {
           }
         }
       );
+
+      //send driver location every 5s
+      if (orderId) {
+        locationSendInterval = setInterval(() => {
+          if (currentLocation) {
+            trackingService.sendLocation(
+              currentLocation.latitude,
+              currentLocation.longitude
+            );
+            console.log("Sending periodic location update (5s)");
+          }
+        }, 5000);
+      }
     }
 
     return () => {
       if (locationSubscription) {
         locationSubscription.then((sub) => sub.remove());
       }
+
+      if (locationSendInterval) {
+        clearInterval(locationSendInterval);
+      }
     };
-  }, [permissionStatus, orderId]);
+  }, [permissionStatus, orderId, currentLocation]);
 
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
@@ -206,8 +239,10 @@ const AddressNavigateMap = () => {
 
       if (lastFetchedLocation) {
         const distanceMoved = calculateDistance(
-          lastFetchedLocation.latitude, lastFetchedLocation.longitude,
-          driverLocation.latitude, driverLocation.longitude
+          lastFetchedLocation.latitude,
+          lastFetchedLocation.longitude,
+          driverLocation.latitude,
+          driverLocation.longitude
         );
 
         // Only fetch new route if moved more than 10 meters from last fetch
@@ -280,8 +315,10 @@ const AddressNavigateMap = () => {
     // Only update driver location and trigger recalculation if moved significantly
     if (driverLocation) {
       const distanceMoved = calculateDistance(
-        driverLocation.latitude, driverLocation.longitude,
-        newLocation.latitude, newLocation.longitude
+        driverLocation.latitude,
+        driverLocation.longitude,
+        newLocation.latitude,
+        newLocation.longitude
       );
 
       if (distanceMoved > 2) {
@@ -361,7 +398,6 @@ const AddressNavigateMap = () => {
               showsUserHeadingIndicator={isDrivingView}
               onUpdate={handleLocationUpdate}
             />
-
 
             {userLocation && (
               <MapboxGL.PointAnnotation
@@ -465,7 +501,8 @@ const AddressNavigateMap = () => {
               <Card.Content>
                 <View style={styles.userInfoContainer}>
                   <Text style={styles.userAddress} numberOfLines={2}>
-                    Địa chỉ: {userData?.pickupAddressDetail || "No address details"}
+                    Địa chỉ:{" "}
+                    {userData?.pickupAddressDetail || "No address details"}
                   </Text>
                 </View>
 
