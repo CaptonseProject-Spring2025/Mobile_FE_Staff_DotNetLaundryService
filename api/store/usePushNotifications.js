@@ -77,7 +77,7 @@ export default function usePushNotifications() {
     messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log("Notification opened app from background:", remoteMessage);
       if (remoteMessage.data) {
-        const { notificationType, orderId } = remoteMessage.data;
+        const { notificationType } = remoteMessage.data;
 
         if (notificationType === "AssignedPickup") {
           console.log("Navigating to DriverPickupScreen");
@@ -106,12 +106,11 @@ export default function usePushNotifications() {
 
               if (notificationType === "AssignedPickup") {
                 console.log("Navigating to DriverPickupScreen");
-                // May need to navigate to the main stack first if not already there
-                // navigation.navigate("Trang chủ"); // Example if needed
+              
                 navigation.navigate("DriverPickupScreen");
               } else if (notificationType === "AssignedDelivery") {
                 console.log("Navigating to DriverDeliveryScreen");
-                // navigation.navigate("Trang chủ"); // Example if needed
+               
                 navigation.navigate("DriverDeliveryScreen");
               } else {
                 console.log("Navigating to Notification screen");
@@ -126,7 +125,7 @@ export default function usePushNotifications() {
     // Register background message handler
     messaging().setBackgroundMessageHandler(async (remoteMessage) => {
       console.log("Background message received:", remoteMessage);
-      // No need to show notification as the system will do it automatically
+    
       return Promise.resolve();
     });
 
