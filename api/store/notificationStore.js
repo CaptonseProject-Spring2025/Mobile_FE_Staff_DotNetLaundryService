@@ -78,14 +78,13 @@ const useNotificationStore = create((set, get) => ({
       set({ loadingSaveToken: true, isErrorSaveToken: null });
 
       const fcmToken = await messaging().getToken();
-      console.log("FCM Token:", fcmToken);
 
       const response = await axiosClient.post("/firebase/save-fcmtoken", {
         userId,
         fcmToken: fcmToken,
       });
       set({ loadingSaveToken: false, isErrorSaveToken: null });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error saving token:", error);
       set({ loadingSaveToken: false, isErrorSaveToken: error.message });

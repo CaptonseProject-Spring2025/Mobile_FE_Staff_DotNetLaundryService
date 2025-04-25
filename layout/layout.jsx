@@ -41,8 +41,8 @@ const Layout = () => {
     }
   };
 
-   // Request notification permissions
-   const requestNotificationPermission = async () => {
+  // Request notification permissions
+  const requestNotificationPermission = async () => {
     try {
       // Check if device is capable of receiving notifications
       const { status: existingStatus } =

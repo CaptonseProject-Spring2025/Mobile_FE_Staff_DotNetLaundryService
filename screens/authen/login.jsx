@@ -24,7 +24,8 @@ export default function LoginScreen({ navigation }) {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
-  const { login, isLoading } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuthStore();
   const { saveToken } = useNotificationStore();
 
   const validatePhone = () => {
@@ -80,31 +81,25 @@ export default function LoginScreen({ navigation }) {
       setIsLoading(false);
       return;
     }
-
     try {
       const result = await login(phoneNumber, password);
       if (!result || !result.success) {
         setLoginError(result?.message || "Sai số điện thoại hoặc mật khẩu");
-      } else {
-        const userRole = useAuthStore.getState().userDetail?.role;
-
-        if (userRole === "Customer" || userRole === "Admin") {
-          // User has an invalid role for this app
-          const logout = useAuthStore.getState().logout;
-          await logout(); // Log them out immediately
-          Alert.alert(
-            "Lỗi Đăng Nhập",
-            "Bạn không có quyền đăng nhập vào ứng dụng này."
-          );
-        } else {
-          try {
-            await saveToken(result.userId);
-          } catch (tokenError) {
-            console.error("Token save error:", tokenError);
-            setLoginError("Đã xảy ra lỗi khi lưu thông tin đăng nhập.");
-          }
-        }
       }
+      const userRole = useAuthStore.getState().userDetail?.role;
+
+      if (userRole === "Customer" || userRole === "Admin") {
+        // User has an invalid role for this app
+        const logout = useAuthStore.getState().logout;
+        await logout(); // Log them out immediately
+        Alert.alert(
+          "Lỗi Đăng Nhập",
+          "Bạn không có quyền đăng nhập vào ứng dụng này."
+        );
+      }
+
+      await saveToken(result.userId);
+
     } catch (error) {
       // Catch errors specifically from the login API call
       console.error("Login API error:", error);
@@ -112,7 +107,6 @@ export default function LoginScreen({ navigation }) {
         "Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại."
       );
     } finally {
-      // This block will always execute, ensuring loading state is reset
       setIsLoading(false);
     }
   };

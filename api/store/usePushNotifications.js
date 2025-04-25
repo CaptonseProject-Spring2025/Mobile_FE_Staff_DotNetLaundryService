@@ -20,18 +20,21 @@ export default function usePushNotifications() {
   // Handle notification taps
   const handleNotificationResponse = (response) => {
     const data = response.notification?.request?.content?.data;
+    console.log("Handling foreground notification tap with data:", data);
 
     if (data) {
-      // Navigate based on notification type
-      if (data.notificationType === "OrderPlaced" && data.orderId) {
-        console.log("Navigating to OrderDetail with orderId:", data.orderId);
-        navigation.navigate("Đơn hàng", {
-          screen: "OrderDetail",
-          params: { orderId: data.orderId },
-        });
+      const { notificationType, orderId } = data;
+
+      if (notificationType === "AssignedPickup") {
+        console.log("Navigating to DriverPickupScreen");
+        navigation.navigate("DriverPickupScreen");
+      } else if (notificationType === "AssignedDelivery") {
+        console.log("Navigating to DriverDeliveryScreen");
+        navigation.navigate("DriverDeliveryScreen");
       } else {
-        // For other notification types, go to notification list
-        navigation.navigate("User", { screen: "Notification" });
+        console.log("Navigating to Notification screen");
+        // Navigate to Notification screen for other types
+        navigation.navigate("Thông báo", { screen: "Notification" });
       }
     }
   };
@@ -72,17 +75,18 @@ export default function usePushNotifications() {
 
     // Handle notification taps when app is opened from background
     messaging().onNotificationOpenedApp((remoteMessage) => {
-      console.log("Notification opened app:", remoteMessage);
+      console.log("Notification opened app from background:", remoteMessage);
       if (remoteMessage.data) {
         const { notificationType, orderId } = remoteMessage.data;
 
-        if (notificationType === "OrderPlaced" && orderId) {
-          console.log("Navigating to OrderDetail with orderId:", orderId);
-          navigation.navigate("Đơn hàng", {
-            screen: "OrderDetail",
-            params: { orderId: orderId },
-          });
+        if (notificationType === "AssignedPickup") {
+          console.log("Navigating to DriverPickupScreen");
+          navigation.navigate("DriverPickupScreen");
+        } else if (notificationType === "AssignedDelivery") {
+          console.log("Navigating to DriverDeliveryScreen");
+          navigation.navigate("DriverDeliveryScreen");
         } else {
+          console.log("Navigating to Notification screen");
           navigation.navigate("Thông báo", { screen: "Notification" });
         }
       }
@@ -100,18 +104,19 @@ export default function usePushNotifications() {
             if (remoteMessage.data) {
               const { notificationType, orderId } = remoteMessage.data;
 
-              if (notificationType === "OrderPlaced" && orderId) {
-                // First ensure we're in the User screen if coming from a notification
-                navigation.navigate("User");
-                console.log("Navigating to OrderDetail with orderId:", orderId);
-                // Then navigate to the OrderScreen tab and its OrderDetail screen
-                navigation.navigate("Đơn hàng", {
-                  screen: "OrderDetail",
-                  params: { orderId: orderId },
-                });
+              if (notificationType === "AssignedPickup") {
+                console.log("Navigating to DriverPickupScreen");
+                // May need to navigate to the main stack first if not already there
+                // navigation.navigate("Trang chủ"); // Example if needed
+                navigation.navigate("DriverPickupScreen");
+              } else if (notificationType === "AssignedDelivery") {
+                console.log("Navigating to DriverDeliveryScreen");
+                // navigation.navigate("Trang chủ"); // Example if needed
+                navigation.navigate("DriverDeliveryScreen");
               } else {
-                navigation.navigate("User");
+                console.log("Navigating to Notification screen");
                 navigation.navigate("Thông báo");
+                navigation.navigate("Thông báo", { screen: "Notification" });
               }
             }
           }, 1000);

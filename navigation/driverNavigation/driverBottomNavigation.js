@@ -1,17 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   DriverHomeScreen,
-  DriverStatisticScreen,
-  DriverUserScreen,
-  DriverNotificationScreen,
   DriverAccountScreen,
   DriverChatScreen,
+  DriverNotificationScreen,
 } from "./driverNavigation.js";
 import Octicons from "react-native-vector-icons/Octicons";
+import useNotificationStore from "../../api/store/notificationStore";
+import useAuthStore from "../../api/store/authStore";
 const Tab = createBottomTabNavigator();
 
 const DriverBottomNavigationTab = () => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { notificationList, fetchNotifications } = useNotificationStore();
+  const { isAuthenticated } = useAuthStore();
+
+  // Fetch notifications and update unread count when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
+
+  // Calculate unread notifications whenever the notification list changes
+  useEffect(() => {
+    if (notificationList && notificationList.length > 0) {
+      const unread = notificationList.filter((item) => !item.isRead).length;
+      setUnreadCount(unread);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [notificationList]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -22,12 +43,25 @@ const DriverBottomNavigationTab = () => {
           } else if (route.name === "Thống kê") {
             iconName = focused ? "checklist" : "checklist";
           } else if (route.name === "Inbox") {
-            iconName = focused
-              ? "comment-discussion"
-              : "comment-discussion";
+            iconName = focused ? "comment-discussion" : "comment-discussion";
           } else if (route.name === "Thông báo") {
             iconName = focused ? "bell" : "bell";
-          }else if (route.name === "Tài khoản") {
+            // Return custom component for notification tab to include badge
+            if (unreadCount > 0) {
+              return (
+                <View style={styles.iconContainer}>
+                  <Octicons name={iconName} color={color} size={24} />
+                  <View style={styles.badgeContainer}>
+                    <Text style={styles.badgeText}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }
+          } else if (route.name === "Thông báo") {
+            iconName = focused ? "bell" : "bell";
+          } else if (route.name === "Tài khoản") {
             iconName = focused ? "person" : "person";
           }
           return <Octicons name={iconName} color={color} size={24} />;
@@ -51,6 +85,14 @@ const DriverBottomNavigationTab = () => {
           headerShown: false,
         }}
       />
+      <Tab.Screen
+        name="Thông báo"
+        component={DriverNotificationScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
       <Tab.Screen
         name="Inbox"
         component={DriverChatScreen}

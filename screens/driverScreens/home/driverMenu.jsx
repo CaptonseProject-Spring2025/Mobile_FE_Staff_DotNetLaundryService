@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -15,21 +15,6 @@ const { width, height } = Dimensions.get("window");
 
 export default function DriverMenu({ navigation }) {
   const { userDetail } = useAuthStore();
-  const [notificationCount, setNotificationCount] = useState(5);
-
-  const data = [
-    {
-      id: "24234DADD",
-      time: "2023-10-12 12:00",
-      customer: {
-        name: "Nguyễn Văn A",
-        phone: "0123456789",
-        address: "123 Đường ABC, Quận 1, TP.HCM",
-      },
-      status: "Đang giao",
-    },
-  ];
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffff" }}>
       {/* Header with greeting and notification icon */}
@@ -44,26 +29,12 @@ export default function DriverMenu({ navigation }) {
         >
           <View>
             <Text style={{ fontSize: 20, color: "#fff", fontWeight: "bold" }}>
-              Xin chào 
+              Xin chào
             </Text>
             <Text style={{ fontSize: 24, color: "#fff", fontWeight: "bold" }}>
               {userDetail?.fullName}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("DriverAccountScreen")}
-          >
-            <View style={styles.iconContainer}>
-              <Ionicons name="notifications-outline" size={32} color="#fff" />
-              {notificationCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {notificationCount > 99 ? "99+" : notificationCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -105,8 +76,8 @@ export default function DriverMenu({ navigation }) {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-         {/* Order confirm section */}
-         <TouchableOpacity
+        {/* Order confirm section */}
+        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("ConfirmPickup")}
         >
@@ -114,7 +85,9 @@ export default function DriverMenu({ navigation }) {
             <Ionicons name="list-outline" size={28} color="#fff" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>đơn hàng cần xác nhận đã lấy hàng</Text>
+            <Text style={styles.menuTitle}>
+              đơn hàng cần xác nhận đã lấy hàng
+            </Text>
             <Text style={styles.menuDescription}>
               Danh sách đơn hàng cần xác nhận đã lấy hàng
             </Text>

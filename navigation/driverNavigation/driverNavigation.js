@@ -13,6 +13,7 @@ import UserListScreen from "../../screens/driverScreens/chat/UserListScreen.jsx"
 import ChatScreen from "../../screens/driverScreens/chat/ChatScreen.jsx";
 import { TouchableOpacity, Text } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import Notification from "../../screens/driverScreens/notification/notification.jsx";
 const Stack = createNativeStackNavigator();
 
 //man hinh menu
@@ -171,8 +172,8 @@ export function DriverNotificationScreen() {
     <Stack.Navigator>
       <Stack.Screen
         name="DriverNotification"
-        component={DriverNotification}
-        options={{ headerShown: false }}
+        component={Notification}
+        options={{ headerTitle: "Thông báo", headerTitleAlign: "center" }}
       />
     </Stack.Navigator>
   );
