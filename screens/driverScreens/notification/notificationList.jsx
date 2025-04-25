@@ -39,7 +39,7 @@ const NotificationItem = memo(
               <View style={styles.leftActions}>
                 <TouchableOpacity
                   style={styles.orderButton}
-                  onPress={() => onViewOrder(item.orderId)}
+                  onPress={() => onViewOrder(item.orderId, item.notificationType)}
                 >
                   <Ionicons name="receipt-outline" size={24} color="#fff" />
                   <Text style={styles.actionText}>Xem đơn</Text>
@@ -210,11 +210,22 @@ const NotificationList = () => {
 
   // Navigate to order detail - memoized
   const handleViewOrder = useCallback(
-    (orderId) => {
-      navigation.navigate("Đơn hàng", {
-        screen: "OrderDetail",
-        params: { orderId },
-      });
+    (orderId, notificationType) => {
+      if (notificationType === "AssignedPickup") {
+        navigation.navigate("Trang chủ", {
+          screen: "DriverPickupScreen",
+          params: { orderId },
+        });
+      } else if (notificationType === "AssignedDelivery") {
+        navigation.navigate("Trang chủ", {
+          screen: "DriverDeliveryScreen",
+          params: { orderId },
+        });
+      } else {
+        navigation.navigate("Trang chủ", {
+          screen: "DriverMenu",
+        });
+      }
     },
     [navigation]
   );
@@ -334,15 +345,19 @@ const NotificationList = () => {
             ListHeaderComponent={
               isAuthenticated && localNotifications.length > 0 ? (
                 <View style={styles.actionButtonsContainer}>
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
+                  <TouchableOpacity
+                    style={styles.actionButton}
                     onPress={handleReadAll}
                   >
-                    <Ionicons name="checkmark-done-outline" size={18} color="#02A257" />
+                    <Ionicons
+                      name="checkmark-done-outline"
+                      size={18}
+                      color="#02A257"
+                    />
                     <Text style={styles.actionButtonTextGreen}>Đọc tất cả</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
+                  <TouchableOpacity
+                    style={styles.actionButton}
                     onPress={handleDeleteAll}
                   >
                     <Ionicons name="trash-outline" size={18} color="#F44336" />
@@ -466,13 +481,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   loadingContainer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     zIndex: 999,
   },

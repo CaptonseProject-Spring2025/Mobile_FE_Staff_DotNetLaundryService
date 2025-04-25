@@ -9,6 +9,7 @@ import {
 import Octicons from "react-native-vector-icons/Octicons";
 import useNotificationStore from "../../api/store/notificationStore";
 import useAuthStore from "../../api/store/authStore";
+import { View, Text, StyleSheet } from "react-native";
 const Tab = createBottomTabNavigator();
 
 const DriverBottomNavigationTab = () => {
@@ -110,5 +111,30 @@ const DriverBottomNavigationTab = () => {
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+  },
+  badgeContainer: {
+    position: "absolute",
+    right: -10,
+    top: -5,
+    backgroundColor: "red",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+});
 
 export default DriverBottomNavigationTab;

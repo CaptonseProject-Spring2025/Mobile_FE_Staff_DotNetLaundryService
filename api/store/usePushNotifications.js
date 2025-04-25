@@ -34,7 +34,7 @@ export default function usePushNotifications() {
       } else {
         console.log("Navigating to Notification screen");
         // Navigate to Notification screen for other types
-        navigation.navigate("Thông báo", { screen: "Notification" });
+        navigation.navigate("Thông báo", { screen: "DriverNotification" });
       }
     }
   };
@@ -87,7 +87,7 @@ export default function usePushNotifications() {
           navigation.navigate("DriverDeliveryScreen");
         } else {
           console.log("Navigating to Notification screen");
-          navigation.navigate("Thông báo", { screen: "Notification" });
+          navigation.navigate("Thông báo", { screen: "DriverNotification" });
         }
       }
     });
@@ -116,7 +116,7 @@ export default function usePushNotifications() {
               } else {
                 console.log("Navigating to Notification screen");
                 navigation.navigate("Thông báo");
-                navigation.navigate("Thông báo", { screen: "Notification" });
+                navigation.navigate("Thông báo", { screen: "DriverNotification" });
               }
             }
           }, 1000);
