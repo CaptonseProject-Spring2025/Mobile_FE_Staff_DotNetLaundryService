@@ -14,21 +14,19 @@ import useAuthStore from "../../../api/store/authStore";
 import useChatStore from "../../../api/store/chatStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 function UserListScreen({ navigation }) {
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [filteredConversations, setFilteredConversations] = useState([]);
-  const { userDetail } = useAuthStore();
+  const { userDetail, isAuthenticated } = useAuthStore();
   const { fetchConversations, conversations, isLoading } = useChatStore();
   const currentUserId = userDetail?.userId;
 
   // Fetch conversations from API
   useFocusEffect(
     React.useCallback(() => {
-      if (currentUserId) {
+      if (currentUserId && isAuthenticated) {
         fetchConversations(currentUserId);
       }
-    }, [currentUserId])
+    }, [currentUserId, isAuthenticated])
   );
 
   // Filter conversations based on search query
