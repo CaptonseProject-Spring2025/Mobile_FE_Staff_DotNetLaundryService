@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -14,13 +14,32 @@ import useAuthStore from "../../../api/store/authStore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import useOrderStore from "../../../api/store/orderStore";
+import useNotificationStore from "../../../api/store/notificationStore";
 
 const { width, height } = Dimensions.get("window");
 
 export default function DriverMenu({ navigation }) {
-  const { userDetail } = useAuthStore();
+  const { userDetail, isAuthenticated } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { assignmentList, fetchAssignmentList } = useOrderStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { notificationList, fetchNotifications } = useNotificationStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
+
+  // Calculate unread notifications whenever the notification list changes
+  useEffect(() => {
+    if (notificationList && notificationList.length > 0) {
+      const unread = notificationList.filter((item) => !item.isRead).length;
+      setUnreadCount(unread);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [notificationList]);
 
   // Filter orders by status
   const pickupOrders =
@@ -99,6 +118,20 @@ export default function DriverMenu({ navigation }) {
                 {userDetail?.fullName}
               </Text>
             </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("DriverNotification")}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="notifications-outline" size={32} color="#fff" />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 

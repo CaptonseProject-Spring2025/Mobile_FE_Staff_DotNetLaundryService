@@ -120,6 +120,11 @@ export function DriverHomeScreen() {
         })}
       />
       <Stack.Screen
+        name="DriverNotification"
+        component={Notification}
+        options={{ headerTitle: "Thông báo", headerTitleAlign: "center" }}
+      />
+      <Stack.Screen
         name="ConfirmPickup"
         component={ConfirmPickup}
         options={{
@@ -161,19 +166,6 @@ export function DriverChatScreen() {
           headerTitle: "Tin nhắn",
           headerTitleAlign: "center",
         }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-//man hinh thong bao
-export function DriverNotificationScreen() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="DriverNotification"
-        component={Notification}
-        options={{ headerTitle: "Thông báo", headerTitleAlign: "center" }}
       />
     </Stack.Navigator>
   );
