@@ -61,7 +61,7 @@
       "@react-native-firebase/messaging", 
       ["expo-notifications"]
     ],
-    "notification": {
+    "notifications": {
       "icon": "./assets/icon.png"
     },
     "extra": {
