@@ -16,17 +16,17 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 function UserListScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredConversations, setFilteredConversations] = useState([]);
-  const { userDetail, isAuthenticated } = useAuthStore();
+  const { userDetail } = useAuthStore();
   const { fetchConversations, conversations, isLoading } = useChatStore();
   const currentUserId = userDetail?.userId;
 
   // Fetch conversations from API
   useFocusEffect(
     React.useCallback(() => {
-      if (currentUserId && isAuthenticated) {
+      if (currentUserId) {
         fetchConversations(currentUserId);
       }
-    }, [currentUserId, isAuthenticated])
+    }, [currentUserId])
   );
 
   // Filter conversations based on search query
