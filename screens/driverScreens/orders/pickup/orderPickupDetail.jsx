@@ -116,30 +116,25 @@ const OrderPickupDetail = ({ navigation, route }) => {
       const userData = userDetail;
       const customerData = userInfo;
 
-      if (!data.exists) {
+      if (data.exists !== true) {
         const createResponse = await axiosClient.post("/Conversations", {
           userOneId: currentUserId,
           userTwoId: receiverId,
         });
-
         navigation.navigate("ChatScreen", {
-          conversationId: createResponse.data.conversationId,
+          chatId: createResponse.data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
-          name: userData.fullName,
-          avatar: userData.avatar,
-          userName: customerData?.fullName || "Customer",
-          userAvatar: customerData?.avatar || null,
+          name: customerData.fullName,
+          avatar: customerData.avatar,
         });
       } else {
         navigation.navigate("ChatScreen", {
-          conversationId: data.conversationId,
+          chatId: data.currenUserId,
           userId: receiverId,
           currentUserId: currentUserId,
-          userName: userData.fullName,
-          userAvatar: userData.avatar,
-          receiverName: customerData?.fullName || "Customer",
-          receiverAvatar: customerData?.avatar || null,
+          userName: customerData.fullName,
+          userAvatar: customerData.avatar,
         });
       }
     } catch (error) {

@@ -27,7 +27,6 @@ import useAuthStore from "../../../../api/store/authStore";
 import axiosClient from "../../../../api/config/axiosClient";
 import useUserStore from "../../../../api/store/userStore";
 
-
 const PaymentMethod = React.memo(
   ({ selectedPayment, setSelectedPayment, disabled }) => {
     // Add disabled prop
@@ -220,30 +219,25 @@ const OrderDetail = ({ navigation, route }) => {
       const userData = userDetail;
       const customerData = userInfo;
 
-      if (!data.exists) {
+      if (data.exists !== true) {
         const createResponse = await axiosClient.post("/Conversations", {
           userOneId: currentUserId,
           userTwoId: receiverId,
         });
-
         navigation.navigate("ChatScreen", {
-          conversationId: createResponse.data.conversationId,
+          chatId: createResponse.data.conversationId,
           userId: receiverId,
           currentUserId: currentUserId,
-          name: userData.fullName,
-          avatar: userData.avatar,
-          userName: customerData?.fullName || "Customer",
-          userAvatar: customerData?.avatar || null,
+          name: customerData.fullName,
+          avatar: customerData.avatar,
         });
       } else {
         navigation.navigate("ChatScreen", {
-          conversationId: data.conversationId,
+          chatId: data.currenUserId,
           userId: receiverId,
           currentUserId: currentUserId,
-          userName: userData.fullName,
-          userAvatar: userData.avatar,
-          receiverName: customerData?.fullName || "Customer",
-          receiverAvatar: customerData?.avatar || null,
+          userName: customerData.fullName,
+          userAvatar: customerData.avatar,
         });
       }
     } catch (error) {
@@ -468,18 +462,18 @@ const OrderDetail = ({ navigation, route }) => {
     }
   };
 
- const handleCall = () => {
-  let phoneNumber = assignmentDetail.phonenumber;
-  if (Platform.OS === "android") {
-    phoneNumber = `tel:${phoneNumber}`;
-  } else {
-    phoneNumber = `telprompt:${phoneNumber}`;
-  }
-  Linking.openURL(phoneNumber).catch((err) =>
-    console.error("Error opening dialer:", err)
-  );
- }
-  
+  const handleCall = () => {
+    let phoneNumber = assignmentDetail.phonenumber;
+    if (Platform.OS === "android") {
+      phoneNumber = `tel:${phoneNumber}`;
+    } else {
+      phoneNumber = `telprompt:${phoneNumber}`;
+    }
+    Linking.openURL(phoneNumber).catch((err) =>
+      console.error("Error opening dialer:", err)
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
