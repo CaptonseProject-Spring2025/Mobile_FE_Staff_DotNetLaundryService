@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -9,165 +10,143 @@ import {
   StyleSheet,
 } from "react-native";
 import { TextInput } from "react-native-paper";
-import axiosClient from "../../../api/config/axiosClient";
 import useAuthStore from "../../../api/store/authStore";
-
+import useChatStore from "../../../api/store/chatStore";
+import Ionicons from "react-native-vector-icons/Ionicons";
 function UserListScreen({ navigation }) {
-  const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeUserId, setActiveUserId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [filteredConversations, setFilteredConversations] = useState([]);
   const { userDetail } = useAuthStore();
+  const { fetchConversations, conversations, isLoading } = useChatStore();
   const currentUserId = userDetail?.userId;
 
-  // Fetch users từ API
-  const fetchUsers = async (pageNumber = 1) => {
-    try {
-      if (pageNumber === 1) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
+  // Fetch conversations from API
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUserId) {
+        fetchConversations(currentUserId);
       }
+    }, [currentUserId])
+  );
 
-      const response = await axiosClient.get("/users", {
-        params: {
-          role: "Customer",
-          page: pageNumber,
-          pageSize: 10,
-        },
-      });
-
-      const newUsers = response.data.data;
-
-      if (pageNumber === 1) {
-        setUsers(newUsers);
-        setFilteredUsers(newUsers);
-      } else {
-        const updatedUsers = [...users, ...newUsers];
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-      }
-
-      if (newUsers.length < 10) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
-
-  // Gọi API khi màn hình được mount
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Filter users when search query changes
+  // Filter conversations based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setFilteredUsers(users);
+      setFilteredConversations(conversations);
       return;
     }
 
-    const filtered = users.filter(
-      (user) =>
-        user.fullName &&
-        user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = conversations.filter(
+      (conversation) =>
+        conversation.userTwoFullName &&
+        conversation.userTwoFullName
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
     );
 
-    setFilteredUsers(filtered);
-  }, [searchQuery, users]);
+    setFilteredConversations(filtered);
+  }, [searchQuery, conversations]);
 
-  // Tải thêm dữ liệu khi kéo tới cuối danh sách
-  const handleLoadMore = () => {
-    if (!isLoadingMore && hasMore) {
-      fetchUsers(page + 1);
-      setPage((prevPage) => prevPage + 1);
+  // Display data logic - now checking for empty state instead of using dummy data
+  const displayData = filteredConversations;
+
+  const formatTime = (date) => {
+    if (!date) return "";
+
+    const now = new Date();
+    const diffInMilliseconds = now - new Date(date);
+
+    // Less than a minute (giây - seconds)
+    const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+    if (diffInSeconds < 60) {
+      return diffInSeconds <= 1 ? "vừa xong" : `${diffInSeconds} giây trước`;
     }
-  };
 
-  const startConversation = async (receiverId) => {
-    try {
-      const response = await axiosClient.get(
-        `Conversations/${receiverId}?currentUserId=${currentUserId}`
-      );
-      const data = response.data;
-
-      if (!data.exists) {
-        const createResponse = await axiosClient.post("/Conversations", {
-          userOneId: currentUserId,
-          userTwoId: receiverId,
-        });
-
-        navigation.navigate("ChatScreen", {
-          conversationId: createResponse.data.conversationId,
-          userId: receiverId,
-          currentUserId: currentUserId,
-          name: users.find(user => user.userId === receiverId)?.fullName || "User",
-          avatar: users.find(user => user.userId === receiverId)?.avatar || 
-            "https://randomuser.me/api/portraits/lego/1.jpg"
-        });
-      } else {
-        navigation.navigate("ChatScreen", {
-          conversationId: data.conversationId,
-          userId: receiverId,
-          currentUserId: currentUserId,
-          name: users.find(user => user.userId === receiverId)?.fullName || "User",
-          avatar: users.find(user => user.userId === receiverId)?.avatar || 
-            "https://randomuser.me/api/portraits/lego/1.jpg"
-        });
-      }
-    } catch (error) {
-      console.error("Error starting conversation:", error);
+    // Less than an hour (phút - minutes)
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} phút trước`;
     }
+
+    // Less than a day (giờ - hours)
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `${diffInHours} giờ trước`;
+    }
+
+    // Less than a week (ngày - days)
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      return `${diffInDays} ngày trước`;
+    }
+
+    // Less than a month (tuần - weeks)
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) {
+      return `${diffInWeeks} tuần trước`;
+    }
+
+    // Less than a year (tháng - months)
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+      return `${diffInMonths} tháng trước`;
+    }
+
+    // More than a year (năm - years)
+    const diffInYears = Math.floor(diffInDays / 365);
+    return `${diffInYears} năm trước`;
   };
 
-  // Format time for last active status (placeholder function)
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const renderItem = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={styles.chatItem}
+        onPress={() =>
+          navigation.navigate("ChatScreen", {
+            chatId: item.conversationid,
+            currentUserId: currentUserId,
+            avatar: item.userTwoAvatar,
+            name: item.userTwoFullName,
+          })
+        }
+      >
+        {item.userTwoAvatar ? (
+          <Image source={{ uri: item.userTwoAvatar }} style={styles.avatar} />
+        ) : (
+          <View
+            style={[
+              styles.avatar,
+              {
+                backgroundColor: "#eee",
+                justifyContent: "center",
+                alignItems: "center",
+              },
+            ]}
+          >
+            <Ionicons name="person" size={28} color="#888" />
+          </View>
+        )}
+        <View style={styles.chatInfo}>
+          <View style={styles.nameTimeRow}>
+            <Text style={styles.name}>{item.userTwoFullName}</Text>
+            <Text style={styles.time}>{formatTime(item.lastMessageDate)}</Text>
+          </View>
+          <View style={styles.messageRow}>
+            <Text style={styles.message} numberOfLines={1}>
+              {item.lastMessage}
+            </Text>
+            {item.unread > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>{item.unread}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  // Render user item with chatList.jsx styling
-  const renderUserItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => {
-        setActiveUserId(item.userId);
-        startConversation(item.userId);
-      }}
-    >
-      <Image
-        source={{
-          uri: item.avatar || "https://randomuser.me/api/portraits/lego/1.jpg"
-        }}
-        style={styles.avatar}
-      />
-      <View style={styles.chatInfo}>
-        <View style={styles.nameTimeRow}>
-          <Text style={styles.name}>{item.fullName || "User"}</Text>
-          <Text style={styles.time}>{formatTime(item.lastActive)}</Text>
-        </View>
-        <View style={styles.messageRow}>
-          <Text style={styles.message} numberOfLines={1}>
-            {item.phoneNumber || "Tap to start conversation"}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -189,26 +168,19 @@ function UserListScreen({ navigation }) {
         theme={{ colors: { primary: "#E9EAEB", outline: "#E9EAEB" } }}
         outlineColor="#E9EAEB"
       />
-      
-      {filteredUsers.length === 0 ? (
+
+      {displayData.length === 0 ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Không tìm thấy người dùng nào</Text>
         </View>
       ) : (
         <FlatList
-          data={filteredUsers}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.userId.toString()}
-          contentContainerStyle={styles.listContainer}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isLoadingMore && (
-              <View style={{ padding: 20, alignItems: "center" }}>
-                <ActivityIndicator size="small" color="#63B35C" />
-              </View>
-            )
+          data={displayData}
+          keyExtractor={(item, index) =>
+            (item.id || item.conversationId || index).toString()
           }
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
         />
       )}
     </View>

@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { HubConnectionBuilder } from "@microsoft/signalr";
 import axiosClient from "../../../api/config/axiosClient";
 
@@ -25,7 +25,8 @@ const ChatScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const flatListRef = useRef(null);
   const route = useRoute();
-  const { conversationId, name, userName, userAvatar, currentUserId, avatar } = route.params;
+  const { chatId, name, currentUserId, avatar } = route.params;
+
 
   // Initialize SignalR connection
   useEffect(() => {
@@ -45,7 +46,7 @@ const ChatScreen = () => {
       newConnection.stop();
     };
   }, []);
-
+  
   // Listen for new messages from SignalR
   useEffect(() => {
     if (!connection) return;
@@ -66,14 +67,14 @@ const ChatScreen = () => {
 
   // Join conversation and fetch message history
   useEffect(() => {
-    if (connection && conversationId) {
-      connection.invoke("JoinConversation", conversationId);
-      console.log("✅ Joined conversation:", conversationId);
+    if (connection && chatId) {
+      connection.invoke("JoinConversation", chatId);
+      console.log("✅ Joined conversation:", chatId);
 
       const fetchMessages = async () => {
         try {
           setIsLoading(true);
-          const res = await axiosClient.get(`Conversations/messages/${conversationId}`);
+          const res = await axiosClient.get(`Conversations/messages/${chatId}`);
           if (res.data.success) {
             setMessages(res.data.messages || []);
           }
@@ -91,17 +92,17 @@ const ChatScreen = () => {
 
       fetchMessages();
     }
-  }, [connection, conversationId]);
+  }, [connection, chatId]);
 
   const handleSend = async () => {
-    if (inputText.trim() === "" || !connection || !conversationId || !currentUserId)
+    if (inputText.trim() === "" || !connection || !chatId || !currentUserId)
       return;
 
     try {
       await connection.invoke(
         "SendMessage",
         currentUserId,
-        conversationId,
+        chatId,
         inputText.trim()
       );
       setInputText("");
@@ -186,7 +187,7 @@ const ChatScreen = () => {
       >
         {!isCurrentUser && (
           <Image
-            source={{ uri: item.avatar || avatar || "https://randomuser.me/api/portraits/lego/1.jpg" }}
+            source={{ uri: item.avatar || avatar }}
             style={styles.messageAvatar}
           />
         )}
@@ -285,18 +286,34 @@ const ChatScreen = () => {
         {/* Chat Header */}
         <View style={styles.header}>
           <View style={styles.headerProfile}>
-            <Image 
-              source={{ uri: avatar || "https://randomuser.me/api/portraits/lego/1.jpg" }} 
-              style={styles.avatar} 
-            />
+            {avatar && avatar.trim() !== "" ? (
+              <Image source={{ uri: avatar }} style={styles.avatar} />
+            ) : (
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    backgroundColor: "#eee",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  },
+                ]}
+              >
+                <Ionicons name="person" size={24} color="#888" />
+              </View>
+            )}
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerName}>{userName || "Chat"}</Text>
+              <Text style={styles.headerName}>{name || "Chat"}</Text>
             </View>
           </View>
+
+          <TouchableOpacity style={styles.headerButton}>
+            <Ionicons name="ellipsis-vertical" size={24} color="#333" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#63B35C" />
+          <ActivityIndicator size="large" color="#5B8DF6" />
           <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
         </View>
       </SafeAreaView>
@@ -310,12 +327,24 @@ const ChatScreen = () => {
       {/* Chat Header */}
       <View style={styles.header}>
         <View style={styles.headerProfile}>
-          <Image 
-            source={{ uri: userAvatar || "https://randomuser.me/api/portraits/lego/1.jpg" }} 
-            style={styles.avatar} 
-          />
+          {avatar && avatar.trim() !== "" ? (
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+          ) : (
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: "#eee",
+                  justifyContent: "center",
+                  alignItems: "center",
+                },
+              ]}
+            >
+              <Ionicons name="person" size={24} color="#888" />
+            </View>
+          )}
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerName}>{userName || "Chat"}</Text>
+            <Text style={styles.headerName}>{name || "Chat"}</Text>
           </View>
         </View>
       </View>
