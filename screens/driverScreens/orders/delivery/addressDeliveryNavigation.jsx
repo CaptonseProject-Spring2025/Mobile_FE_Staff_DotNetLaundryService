@@ -147,16 +147,68 @@ const AddressDeliveryNavigateMap = () => {
 
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
-    let locationSubscription;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPermissionStatus(status);
 
-    let locationSendInterval;
+      if (status === "granted") {
+        try {
+          const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+          });
+
+          setDriverLocation({
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+          });
+
+          // Set user location from data passed in route params
+          if (
+            userData &&
+            userData.deliveryLatitude &&
+            userData.deliveryLongitude
+          ) {
+            setUserLocation({
+              latitude: userData.deliveryLatitude,
+              longitude: userData.deliveryLongitude,
+            });
+          }
+
+          // Initial zoom to driver location
+          setTimeout(() => {
+            if (cameraRef.current) {
+              cameraRef.current.setCamera({
+                centerCoordinate: [
+                  currentLocation.coords.longitude,
+                  currentLocation.coords.latitude,
+                ],
+                zoomLevel: 15,
+                animationDuration: 1000,
+              });
+            }
+          }, 1000);
+        } catch (error) {
+          console.error("Error getting location:", error);
+          // Fallback to default driver location
+          setDriverLocation({
+            latitude: 10.78535,
+            longitude: 106.61849,
+          });
+        }
+      }
+    })();
+  }, [userData]);
+
+  // Create a location tracking effect that updates more frequently
+  useEffect(() => {
+    let locationSubscription;
 
     if (permissionStatus === "granted") {
       locationSubscription = Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 3000,
-          distanceInterval: 10,
+          distanceInterval: 2,
         },
         (location) => {
           const newLocation = {
@@ -183,7 +235,6 @@ const AddressDeliveryNavigateMap = () => {
             );
 
             if (distanceMoved > 2) {
-              // if distance moved is more than 5 meters update driver location
               setDriverLocation(newLocation);
             }
           } else {
@@ -191,31 +242,14 @@ const AddressDeliveryNavigateMap = () => {
           }
         }
       );
-
-      //send driver location every 5s
-      if (orderId) {
-        locationSendInterval = setInterval(() => {
-          if (currentLocation) {
-            trackingService.sendLocation(
-              currentLocation.latitude,
-              currentLocation.longitude
-            );
-            console.log("Sending periodic location update (5s)");
-          }
-        }, 5000);
-      }
     }
 
     return () => {
       if (locationSubscription) {
         locationSubscription.then((sub) => sub.remove());
       }
-
-      if (locationSendInterval) {
-        clearInterval(locationSendInterval);
-      }
     };
-  }, [permissionStatus, orderId, currentLocation]);
+  }, [permissionStatus, orderId]);
 
   // Force regular updates of the direct line but less frequently
   useEffect(() => {

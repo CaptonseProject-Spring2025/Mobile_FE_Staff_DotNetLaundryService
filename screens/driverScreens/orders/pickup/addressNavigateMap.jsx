@@ -145,75 +145,55 @@ const AddressNavigateMap = () => {
 
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
-    let locationSubscription;
-
-    let locationSendInterval;
-
-    if (permissionStatus === "granted") {
-      locationSubscription = Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 3000,
-          distanceInterval: 10,
-        },
-        (location) => {
-          const newLocation = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          };
-          setCurrentDriverLocation(newLocation);
-          setCurrentLocation(newLocation);
-
-          // send live location over SignalR
-          if (orderId) {
-            trackingService.sendLocation(
-              location.coords.latitude,
-              location.coords.longitude
-            );
-          }
-
-          if (driverLocation) {
-            const distanceMoved = calculateDistance(
-              driverLocation.latitude,
-              driverLocation.longitude,
-              newLocation.latitude,
-              newLocation.longitude
-            );
-
-            if (distanceMoved > 2) {
-              // if distance moved is more than 5 meters update driver location
-              setDriverLocation(newLocation);
-            }
-          } else {
-            setDriverLocation(newLocation);
-          }
-        }
-      );
-
-      //send driver location every 5s
-      if (orderId) {
-        locationSendInterval = setInterval(() => {
-          if (currentLocation) {
-            trackingService.sendLocation(
-              currentLocation.latitude,
-              currentLocation.longitude
-            );
-            console.log("Sending periodic location update (5s)");
-          }
-        }, 5000);
-      }
-    }
-
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.then((sub) => sub.remove());
-      }
-
-      if (locationSendInterval) {
-        clearInterval(locationSendInterval);
-      }
-    };
-  }, [permissionStatus, orderId, currentLocation]);
+     let locationSubscription;
+ 
+     if (permissionStatus === "granted") {
+       locationSubscription = Location.watchPositionAsync(
+         {
+           accuracy: Location.Accuracy.Balanced,
+           timeInterval: 3000,
+           distanceInterval: 2,
+         },
+         (location) => {
+           const newLocation = {
+             latitude: location.coords.latitude,
+             longitude: location.coords.longitude,
+           };
+           setCurrentDriverLocation(newLocation);
+           setCurrentLocation(newLocation);
+ 
+           // send live location over SignalR
+           if (orderId) {
+             trackingService.sendLocation(
+               location.coords.latitude,
+               location.coords.longitude
+             );
+           }
+ 
+           if (driverLocation) {
+             const distanceMoved = calculateDistance(
+               driverLocation.latitude,
+               driverLocation.longitude,
+               newLocation.latitude,
+               newLocation.longitude
+             );
+ 
+             if (distanceMoved > 2) {
+               setDriverLocation(newLocation);
+             }
+           } else {
+             setDriverLocation(newLocation);
+           }
+         }
+       );
+     }
+ 
+     return () => {
+       if (locationSubscription) {
+         locationSubscription.then((sub) => sub.remove());
+       }
+     };
+   }, [permissionStatus, orderId]);
 
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
