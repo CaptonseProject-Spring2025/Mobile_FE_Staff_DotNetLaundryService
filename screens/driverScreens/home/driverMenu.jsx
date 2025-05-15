@@ -209,7 +209,7 @@ export default function DriverMenu({ navigation }) {
             </View>
             <View style={styles.menuTextContainer}>
               <View style={styles.menuTitleContainer}>
-                <Text style={styles.menuTitle}>Xác nhận đã lấy hàng</Text>
+                <Text style={styles.menuTitle}>Xác nhận đơn hàng</Text>
                 {confirmOrders.length > 0 && (
                   <View
                     style={[styles.countBadge, { backgroundColor: "#037bfc" }]}
@@ -219,7 +219,7 @@ export default function DriverMenu({ navigation }) {
                 )}
               </View>
               <Text style={styles.menuDescription}>
-                Danh sách đơn hàng cần xác nhận đã lấy hàng
+                Danh sách đơn hàng cần xác đã lấy hoặc giao hàng thành công
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />

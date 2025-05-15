@@ -27,7 +27,6 @@ const ChatScreen = () => {
   const route = useRoute();
   const { chatId, name, currentUserId, avatar } = route.params;
 
-
   // Initialize SignalR connection
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
@@ -46,7 +45,7 @@ const ChatScreen = () => {
       newConnection.stop();
     };
   }, []);
-  
+
   // Listen for new messages from SignalR
   useEffect(() => {
     if (!connection) return;
@@ -185,12 +184,23 @@ const ChatScreen = () => {
             : styles.otherUserMessageContainer,
         ]}
       >
-        {!isCurrentUser && (
-          <Image
-            source={{ uri: item.avatar || avatar }}
-            style={styles.messageAvatar}
-          />
-        )}
+        {!isCurrentUser &&
+          (item.avatar && item.avatar.trim() !== "" ? (
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          ) : (
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: "#eee",
+                  justifyContent: "center",
+                  alignItems: "center",
+                },
+              ]}
+            >
+              <Ionicons name="person" size={24} color="#888" />
+            </View>
+          ))}
         <View
           style={[
             styles.messageBubble,
