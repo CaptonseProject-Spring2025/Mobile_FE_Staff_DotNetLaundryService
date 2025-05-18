@@ -85,13 +85,17 @@ const Layout = () => {
       return false;
     }
   };
-
   useEffect(() => {
+    let delayTimerId;
+    let loadingTimerId;
+    
     // Initialize auth state with better error handling
     const initApp = async () => {
       try {
         // Small delay to ensure AsyncStorage is ready
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => {
+          delayTimerId = setTimeout(resolve, 500);
+        });
 
         // Request permissions
         await requestLocationPermission();
@@ -100,19 +104,25 @@ const Layout = () => {
         // Initialize auth
         await initialize();
         // Keep loading screen visible for at least 2 seconds
-        setTimeout(() => {
+        loadingTimerId = setTimeout(() => {
           setIsLoading(false);
         }, 2000);
       } catch (error) {
         console.error("App initialization failed:", error);
         // Still proceed to main app after error
-        setTimeout(() => {
+        loadingTimerId = setTimeout(() => {
           setIsLoading(false);
         }, 1000);
       }
     };
 
     initApp();
+    
+    // Clean up all timers on unmount
+    return () => {
+      if (delayTimerId) clearTimeout(delayTimerId);
+      if (loadingTimerId) clearTimeout(loadingTimerId);
+    };
   }, [initialize]);
 
   // Add periodic token check effect

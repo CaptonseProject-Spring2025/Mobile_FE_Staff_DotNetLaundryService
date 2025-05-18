@@ -100,6 +100,19 @@ class TrackingService {
   onError(callback) {
     this.callbacks.onError = callback;
   }
+  
+  // Add methods to remove listeners
+  removeLocationListener(callback) {
+    if (this.callbacks.onLocationReceived === callback) {
+      this.callbacks.onLocationReceived = null;
+    }
+  }
+  
+  removeErrorListener(callback) {
+    if (this.callbacks.onError === callback) {
+      this.callbacks.onError = null;
+    }
+  }
 }
 
 export default new TrackingService();

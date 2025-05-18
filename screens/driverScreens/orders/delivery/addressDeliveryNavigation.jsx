@@ -65,12 +65,22 @@ const AddressDeliveryNavigateMap = () => {
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
-
   // start SignalR connection when mounting
   useEffect(() => {
-    trackingService.startConnection(orderId);
-    trackingService.onError(console.error);
-    return () => trackingService.stopConnection();
+    if (orderId) {
+      // Create handler functions that can be referenced for cleanup
+      const handleError = (error) => {
+        console.error("Tracking error:", error);
+      };
+      
+      trackingService.startConnection(orderId);
+      trackingService.onError(handleError);
+      
+      return () => {
+        trackingService.stopConnection();
+        trackingService.removeErrorListener(handleError);
+      };
+    }
   }, [orderId]);
 
   // Request permission and get current location
@@ -93,6 +103,8 @@ const AddressDeliveryNavigateMap = () => {
 
   // Request permission and get current location
   useEffect(() => {
+    let zoomTimerId; // Added to track timeout ID for cleanup
+    
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermissionStatus(status);
@@ -121,7 +133,7 @@ const AddressDeliveryNavigateMap = () => {
           }
 
           // Initial zoom to driver location
-          setTimeout(() => {
+          zoomTimerId = setTimeout(() => {
             if (cameraRef.current) {
               cameraRef.current.setCamera({
                 centerCoordinate: [
@@ -143,121 +155,150 @@ const AddressDeliveryNavigateMap = () => {
         }
       }
     })();
-  }, [userData]);
 
-  // Create a location tracking effect that updates more frequently
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionStatus(status);
-
-      if (status === "granted") {
-        try {
-          const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Highest,
-          });
-
-          setDriverLocation({
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
-          });
-
-          // Set user location from data passed in route params
-          if (
-            userData &&
-            userData.deliveryLatitude &&
-            userData.deliveryLongitude
-          ) {
-            setUserLocation({
-              latitude: userData.deliveryLatitude,
-              longitude: userData.deliveryLongitude,
-            });
-          }
-
-          // Initial zoom to driver location
-          setTimeout(() => {
-            if (cameraRef.current) {
-              cameraRef.current.setCamera({
-                centerCoordinate: [
-                  currentLocation.coords.longitude,
-                  currentLocation.coords.latitude,
-                ],
-                zoomLevel: 15,
-                animationDuration: 1000,
-              });
-            }
-          }, 1000);
-        } catch (error) {
-          console.error("Error getting location:", error);
-          // Fallback to default driver location
-          setDriverLocation({
-            latitude: 10.78535,
-            longitude: 106.61849,
-          });
-        }
-      }
-    })();
-  }, [userData]);
-
-  // Create a location tracking effect that updates more frequently
-  useEffect(() => {
-    let locationSubscription;
-
-    if (permissionStatus === "granted") {
-      locationSubscription = Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 3000,
-          distanceInterval: 2,
-        },
-        (location) => {
-          const newLocation = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          };
-          setCurrentDriverLocation(newLocation);
-          setCurrentLocation(newLocation);
-
-          // send live location over SignalR
-          if (orderId) {
-            trackingService.sendLocation(
-              location.coords.latitude,
-              location.coords.longitude
-            );
-          }
-
-          if (driverLocation) {
-            const distanceMoved = calculateDistance(
-              driverLocation.latitude,
-              driverLocation.longitude,
-              newLocation.latitude,
-              newLocation.longitude
-            );
-
-            if (distanceMoved > 2) {
-              setDriverLocation(newLocation);
-            }
-          } else {
-            setDriverLocation(newLocation);
-          }
-        }
-      );
-    }
-
+    // Cleanup function to clear the timeout when component unmounts
     return () => {
-      if (locationSubscription) {
-        locationSubscription.then((sub) => sub.remove());
+      if (zoomTimerId) clearTimeout(zoomTimerId);
+    };
+  }, [userData]);
+  // Create a location tracking effect that updates more frequently
+  useEffect(() => {
+    let zoomTimerId;
+    
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPermissionStatus(status);
+
+      if (status === "granted") {
+        try {
+          const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+          });
+
+          setDriverLocation({
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+          });
+
+          // Set user location from data passed in route params
+          if (
+            userData &&
+            userData.deliveryLatitude &&
+            userData.deliveryLongitude
+          ) {
+            setUserLocation({
+              latitude: userData.deliveryLatitude,
+              longitude: userData.deliveryLongitude,
+            });
+          }
+
+          // Initial zoom to driver location
+          zoomTimerId = setTimeout(() => {
+            if (cameraRef.current) {
+              cameraRef.current.setCamera({
+                centerCoordinate: [
+                  currentLocation.coords.longitude,
+                  currentLocation.coords.latitude,
+                ],
+                zoomLevel: 15,
+                animationDuration: 1000,
+              });
+            }
+          }, 1000);
+        } catch (error) {
+          console.error("Error getting location:", error);
+          // Fallback to default driver location
+          setDriverLocation({
+            latitude: 10.78535,            longitude: 106.61849,
+          });
+        }
+      }
+    })();
+    
+    // Cleanup function to clear the timeout when component unmounts
+    return () => {
+      if (zoomTimerId) clearTimeout(zoomTimerId);
+    };
+  }, [userData]);
+  // Create a location tracking effect that updates more frequently
+  useEffect(() => {
+    let locationSubscription = null;
+    let isMounted = true;
+
+    const startLocationTracking = async () => {
+      if (permissionStatus === "granted") {
+        try {
+          const subscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Balanced,
+              timeInterval: 3000,
+              distanceInterval: 2,
+            },
+            (location) => {
+              if (!isMounted) return;
+              
+              const newLocation = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              };
+              setCurrentDriverLocation(newLocation);
+              setCurrentLocation(newLocation);
+
+              // send live location over SignalR
+              if (orderId) {
+                trackingService.sendLocation(
+                  location.coords.latitude,
+                  location.coords.longitude
+                );
+              }
+
+              if (driverLocation) {
+                const distanceMoved = calculateDistance(
+                  driverLocation.latitude,
+                  driverLocation.longitude,
+                  newLocation.latitude,
+                  newLocation.longitude
+                );
+
+                if (distanceMoved > 2) {
+                  setDriverLocation(newLocation);
+                }
+              } else {
+                setDriverLocation(newLocation);
+              }
+            }
+          );
+          
+          locationSubscription = subscription;
+        } catch (error) {
+          console.error("Error setting up location tracking:", error);
+        }
       }
     };
-  }, [permissionStatus, orderId]);
+    
+    startLocationTracking();
 
+    return () => {
+      isMounted = false;
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [permissionStatus, orderId, driverLocation]);
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
+    let isMounted = true;
+    
     const updateInterval = setInterval(() => {
-      setForceUpdate((prev) => prev + 1);
+      if (isMounted) {
+        setForceUpdate((prev) => prev + 1);
+      }
     }, 1000);
 
-    return () => clearInterval(updateInterval);
+    return () => {
+      isMounted = false;
+      clearInterval(updateInterval);
+    };
   }, []);
 
   // Update the direct line when forceUpdate changes
@@ -266,53 +307,95 @@ const AddressDeliveryNavigateMap = () => {
       setLineUpdateKey((prev) => prev + 1);
     }
   }, [forceUpdate, currentDriverLocation, userLocation]);
-
   // Get route when either location changes significantly
   useEffect(() => {
-    if (driverLocation && userLocation && !isFetchingRoute) {
-      // Check if we need to fetch a new route
-      let shouldFetch = true;
+    let isMounted = true;
+    
+    const fetchRoute = async () => {
+      if (driverLocation && userLocation && !isFetchingRoute) {
+        // Check if we need to fetch a new route
+        let shouldFetch = true;
 
-      if (lastFetchedLocation) {
-        const distanceMoved = calculateDistance(
-          lastFetchedLocation.latitude,
-          lastFetchedLocation.longitude,
-          driverLocation.latitude,
-          driverLocation.longitude
-        );
-        // Only fetch new route if moved more than 10 meters from last fetch
-        shouldFetch = distanceMoved > 2;
-      }
+        if (lastFetchedLocation) {
+          const distanceMoved = calculateDistance(
+            lastFetchedLocation.latitude,
+            lastFetchedLocation.longitude,
+            driverLocation.latitude,
+            driverLocation.longitude
+          );
+          // Only fetch new route if moved more than 2 meters from last fetch
+          shouldFetch = distanceMoved > 2;
+        }
 
-      if (shouldFetch) {
-        fetchDirectionsRoute();
+        if (shouldFetch && isMounted) {
+          fetchDirectionsRoute();
+        }
       }
-    }
+    };
+    
+    fetchRoute();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [driverLocation, userLocation]);
-
   //follow driver
   useEffect(() => {
+    let cameraAnimationId = null;
+    
     if (isDrivingView && cameraRef.current) {
       // Set camera to follow user with heading when in driving mode
-      cameraRef.current.setCamera({
-        followUserLocation: true,
-        followUserMode: MapboxGL.UserTrackingModes.FollowWithCourse,
-        followPitch: 60,
-        pitch: 60,
-        zoomLevel: 17,
-        animationDuration: 1000,
-      });
+      try {
+        const animation = cameraRef.current.setCamera({
+          followUserLocation: true,
+          followUserMode: MapboxGL.UserTrackingModes.FollowWithCourse,
+          followPitch: 60,
+          pitch: 60,
+          zoomLevel: 17,
+          animationDuration: 1000,
+        });
+        
+        // Store animation reference if available
+        if (animation && animation.requestId) {
+          cameraAnimationId = animation.requestId;
+        }
+      } catch (error) {
+        console.error("Error setting camera in driving view:", error);
+      }
     } else if (!isDrivingView && cameraRef.current && driverLocation) {
       // Reset camera when exiting driving mode
-      cameraRef.current.setCamera({
-        centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
-        followUserLocation: false,
-        followUserMode: MapboxGL.UserTrackingModes.None,
-        zoomLevel: 12,
-        pitch: 0,
-        animationDuration: 1000,
-      });
+      try {
+        const animation = cameraRef.current.setCamera({
+          centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
+          followUserLocation: false,
+          followUserMode: MapboxGL.UserTrackingModes.None,
+          zoomLevel: 12,
+          pitch: 0,
+          animationDuration: 1000,
+        });
+        
+        // Store animation reference if available
+        if (animation && animation.requestId) {
+          cameraAnimationId = animation.requestId;
+        }
+      } catch (error) {
+        console.error("Error resetting camera:", error);
+      }
     }
+    
+    // Clean up animations
+    return () => {
+      if (cameraAnimationId && cameraRef.current) {
+        try {
+          // Cancel any ongoing camera animations if supported by the API
+          if (cameraRef.current.cancelCameraAnimation) {
+            cameraRef.current.cancelCameraAnimation(cameraAnimationId);
+          }
+        } catch (error) {
+          console.log("Error cleaning up camera animation:", error);
+        }
+      }
+    };
   }, [isDrivingView, driverLocation]);
 
   const fetchDirectionsRoute = async () => {
@@ -359,9 +442,8 @@ const AddressDeliveryNavigateMap = () => {
       setIsFetchingRoute(false);
     }
   };
-
   const handleLocationUpdate = (location) => {
-    if (!location || !location.coords) return;
+    if (!location || !location.coords || !isMounted.current) return;
 
     const newLocation = {
       latitude: location.coords.latitude,
@@ -391,19 +473,29 @@ const AddressDeliveryNavigateMap = () => {
       setLineUpdateKey((prev) => prev + 1);
     }
   };
-
   // Start navigation animation if in driving view automatically
   useEffect(() => {
+    let animationRef = null;
+    
     if (isDrivingView && routeCoordinates.length > 0 && duration) {
       setShowTravelingArrow(true);
-      Animated.timing(arrowPositionRef, {
+      animationRef = Animated.timing(arrowPositionRef, {
         toValue: 1,
         duration: duration * 60000,
         easing: Easing.linear,
         useNativeDriver: true,
-      }).start();
+      });
+      
+      animationRef.start();
     }
-  }, [isDrivingView, routeCoordinates.length, duration]);
+    
+    // Clean up animation when component unmounts or dependencies change
+    return () => {
+      if (animationRef) {
+        animationRef.stop();
+      }
+    };
+  }, [isDrivingView, routeCoordinates.length, duration, arrowPositionRef]);
 
   // // Add this useEffect to handle zoom changes
   if (permissionStatus === "denied") {
