@@ -99,7 +99,6 @@ export default function LoginScreen({ navigation }) {
       }
 
       await saveToken(result.userId);
-
     } catch (error) {
       // Catch errors specifically from the login API call
       console.error("Login API error:", error);
@@ -210,6 +209,12 @@ export default function LoginScreen({ navigation }) {
           ) : (
             <Text style={styles.loginButtonText}>Đăng Nhập</Text>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("InputPhone")}
+          style={{ marginBottom: 20 }}
+        >
+          <Text style={{ color: "black", fontSize: 16 }}>Quên mật khẩu?</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Loading from "../screens/loading.jsx";
-import { AuthenNavigation } from "../navigation/authenNavigation/authenNavigation.js";
+import { Authen } from "../navigation/authenNavigation/authen.js";
 import DriverBottomNavigationTab from "../navigation/driverNavigation/driverBottomNavigation.js";
 import StaffBottomNavigationTab from "../navigation/staffNavigation/staffBottomNavigation.js";
 import * as Location from "expo-location";
@@ -177,7 +177,7 @@ const Layout = () => {
           // Show authentication flow when not authenticated
           <Stack.Screen
             name="Authentication"
-            component={AuthenNavigation}
+            component={Authen}
             options={{ headerShown: false }}
           />
         )}

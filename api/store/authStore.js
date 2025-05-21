@@ -22,9 +22,8 @@ const useAuthStore = create((set, get) => ({
   isLoading: false,
   otpToken: null,
   lastTokenCheck: 0, // Track when we last checked token validity
-  tempRegisterData: {
+  tempResetPasswordData: {
     phoneNumber: "",
-    password: "",
   },
 
   // Initialize auth state from storage
@@ -293,22 +292,6 @@ const useAuthStore = create((set, get) => ({
     return refreshPromise;
   },
 
-  // Send OTP
-  sendOtp: async (phoneNumber) => {
-    set({ isLoading: true });
-    try {
-      await axiosClient.post("/otp/send", { phone: phoneNumber });
-      set({ isLoading: false });
-      return { success: true };
-    } catch (error) {
-      set({ isLoading: false });
-      return {
-        success: false,
-        message: error.response?.data?.message || "Failed to send OTP",
-      };
-    }
-  },
-
   // Resend OTP
   resendOtp: async (phoneNumber) => {
     set({ isLoading: true });
@@ -349,49 +332,25 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Register user
-  register: async (registerData, otpToken) => {
+  // Verify OTP for password reset
+  verifyOtpResetPassword: async (phone, otp) => {
     set({ isLoading: true });
     try {
-      const response = await axiosClient.post(
-        `/Auth/register?otpToken=${otpToken}`,
-        registerData
-      );
-
-      const { userId, token, refreshToken, refreshTokenExpiry } = response.data;
-
-      // Store essential auth data all at once
-      await AsyncStorage.multiSet([
-        [STORAGE_KEYS.TOKEN, token],
-        [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
-        [STORAGE_KEYS.REFRESH_TOKEN_EXPIRY, refreshTokenExpiry],
-        [STORAGE_KEYS.USER_ID, userId.toString()],
-      ]);
-
-      // Update state
-      set({
-        token,
-        refreshToken,
-        refreshTokenExpiry,
-        userId,
-        isAuthenticated: true,
-        isLoading: false,
-        otpToken: null,
-        lastTokenCheck: Date.now(),
-        tempRegisterData: {
-          phoneNumber: "",
-          password: "",
-        },
+      const response = await axiosClient.post("/otp/reset-password", {
+        phone,
+        otp,
       });
 
-      // Fetch complete user details
-      await get().fetchUserDetail(userId);
-      return { success: true, userId };
+      const { token } = response.data;
+      set({ otpToken: token, isLoading: false });
+      return { success: true, token };
     } catch (error) {
       set({ isLoading: false });
       return {
         success: false,
-        message: error.response?.data?.message || "Registration failed",
+        message:
+          error.response?.data?.message ||
+          "Failed to verify OTP for password reset",
       };
     }
   },
@@ -453,15 +412,18 @@ const useAuthStore = create((set, get) => ({
   },
 
   //reset password
-  resetPassword: async (phone, password) => {
+  resetPassword: async (formData) => {
     set({ isLoading: true });
     try {
-      const response = await axiosClient.post("/auth/reset-password", {
-        phone,
-        password,
-      });
+      await axiosClient.post("/auth/reset-password", formData);
 
-      set({ isLoading: false });
+      set({
+        isLoading: false,
+        otpToken: null,
+        tempResetPasswordData: {
+          phoneNumber: "",
+        },
+      });
       return { success: true };
     } catch (error) {
       set({ isLoading: false });
@@ -509,10 +471,10 @@ const useAuthStore = create((set, get) => ({
   },
 
   // Store temporary registration data
-  setTempRegisterData: (data) => {
+   setResetPasswordData: (data) => {
     set((state) => ({
-      tempRegisterData: {
-        ...state.tempRegisterData,
+      tempResetPasswordData: {
+        ...state.tempResetPasswordData,
         ...data,
       },
     }));
