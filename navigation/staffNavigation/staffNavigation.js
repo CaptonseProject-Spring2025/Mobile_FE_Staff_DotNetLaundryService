@@ -12,8 +12,10 @@ import OrderWashingListSceen from "../../screens/staffScreens/orders/OrderWashin
 import OrderDetailWashingScreen from "../../screens/staffScreens/orders/OrdeDetailWashingScreen.jsx";
 import OrderWashedListScreen from "../../screens/staffScreens/orders/OrderWashedListScreen.jsx";
 import OrderDetailWashedScreen from "../../screens/staffScreens/orders/OrderDetailWashedScreen.jsx";
-import UserListScreen from '../../screens/staffScreens/chat/UserListScreen.jsx';
-import ChatScreen from '../../screens/staffScreens/chat/ChatScreen.jsx';
+import UserListScreen from "../../screens/staffScreens/chat/UserListScreen.jsx";
+import ChatScreen from "../../screens/staffScreens/chat/ChatScreen.jsx";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { TouchableOpacity } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
@@ -27,76 +29,148 @@ export function StaffHomeScreen() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="OrderListScreen" // Sửa lại tên màn hình cho đúng
+        name="OrderListScreen"
         component={OrderListScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Danh sách đơn hàng",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StaffMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderCheckingListScreen"
         component={OrderCheckingListScreen}
-        options={{
-          headerTitle: "Danh sách đơn hàng",
+        options={({ navigation }) => ({
+          headerTitle: "Danh sách đơn hàng đang xử lý",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StaffMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderDetailScreen"
         component={OrderDetailScreen}
-        options={{
-          headerTitle: "Chi tiết đơn hàng",
+        options={({ navigation }) => ({
+          headerTitle: "Chi tiết đơn hàng đang xử lý",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("OrderCheckingListScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderListCheckedScreen"
         component={OrderListCheckedScreen}
-        options={{
-          headerTitle: "Danh sách đơn hàng",
+        options={({ navigation }) => ({
+          headerTitle: "Danh sách đơn hàng đã kiểm tra",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StaffMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderDetailCheckedSceen"
         component={OrderDetailCheckedSceen}
-        options={{
-          headerTitle: "Chi tiết đơn hàng",
+        options={({ navigation }) => ({
+          headerTitle: "Chi tiết đơn hàng đã kiểm tra",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("OrderListCheckedScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderWashingListScreen"
-        component={OrderWashingListSceen} 
-        options={{
-          headerTitle: "Chi tiết đơn hàng",
+        component={OrderWashingListSceen}
+        options={({ navigation }) => ({
+          headerTitle: "Danh sách đơn hàng đang giặt",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StaffMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderDetailWashingScreen"
         component={OrderDetailWashingScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Chi tiết đơn hàng đang giặt",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("OrderWashingListScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderWashedListScreen"
         component={OrderWashedListScreen}
-        options={{
-          headerTitle: "Chi tiết đơn hàng",
+        options={({ navigation }) => ({
+          headerTitle: "Danh sách đơn hàng đã giặt",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StaffMenu")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Stack.Screen
         name="OrderDetailWashedScreen"
         component={OrderDetailWashedScreen}
-        options={{
-          headerTitle: "Chi tiết đơn hàng đang giặt",
+        options={({ navigation }) => ({
+          headerTitle: "Chi tiết đơn hàng đã giặt",
           headerTitleAlign: "center",
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("OrderWashedListScreen")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        })}
       />
     </Stack.Navigator>
   );
@@ -109,20 +183,6 @@ export function StaffStatisticScreen() {
       <Stack.Screen
         name="StaffStatistic"
         component={DriverMenu}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-
-//man hinh thong bao
-export function StaffNotificationScreen() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="DriverNotification"
-        component={DriverNotification}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

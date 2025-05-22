@@ -13,33 +13,32 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axiosClient from "../../../api/config/axiosClient";
-import { Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from "react-native";
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const OrderDetailCheckedSceen = ({ route, navigation }) => {
   const { orderId, orderDetail } = route.params;
   const [photos, setPhotos] = useState([]);
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  
+
   // Xử lý back button
   const handleGoBack = () => {
-    console.log("Navigating back...");
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("OrderListCheckedScreen");
-    }
+    navigation.navigate("OrderWashingListScreen");
     return true;
   };
-  
+
   useEffect(() => {
     // Animation when screen loads
     Animated.parallel([
@@ -52,13 +51,12 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
-      })
+      }),
     ]).start();
-    
 
     // Handle hardware back button
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       handleGoBack
     );
 
@@ -98,7 +96,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
         tension: 40,
         useNativeDriver: true,
       }).start();
-      
+
       setPhotos((prevPhotos) => [...prevPhotos, selectedPhoto]);
     }
   };
@@ -137,7 +135,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
         tension: 40,
         useNativeDriver: true,
       }).start();
-      
+
       setPhotos((prevPhotos) => [...prevPhotos, ...result.assets]);
     }
   };
@@ -148,30 +146,48 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
       return;
     }
 
+    if (!note) {
+      Alert.alert("Lỗi", "Vui lòng nhập ghi chú.");
+      return;
+    }
+
+    if (photos.length === 0) {
+      Alert.alert("Lỗi", "Vui lòng chọn ít nhất một ảnh.");
+      return;
+    }
+
     setIsUploading(true);
     const formData = new FormData();
-    
+
     // Thêm orderId vào formData
     formData.append("orderId", orderId);
-    
+
     // Thêm notes vào formData
     formData.append("notes", note);
-    
+
     // Thêm files vào formData
     try {
       let totalSize = 0;
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
-        
+
         // Kiểm tra kích thước file
         if (photo.fileSize) {
           totalSize += photo.fileSize;
           // Nếu ảnh quá lớn, hiển thị cảnh báo
-          if (photo.fileSize > 5 * 1024 * 1024) { // 5MB
-            Alert.alert("Cảnh báo", `Ảnh thứ ${i+1} có kích thước lớn (${(photo.fileSize/1024/1024).toFixed(2)}MB) và có thể gây lỗi khi upload.`);
+          if (photo.fileSize > 5 * 1024 * 1024) {
+            // 5MB
+            Alert.alert(
+              "Cảnh báo",
+              `Ảnh thứ ${i + 1} có kích thước lớn (${(
+                photo.fileSize /
+                1024 /
+                1024
+              ).toFixed(2)}MB) và có thể gây lỗi khi upload.`
+            );
           }
         }
-        
+
         // Sử dụng tham số 'files'
         formData.append("files", {
           uri: photo.uri,
@@ -179,18 +195,27 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
           name: photo.fileName || `photo_${i + 1}.jpg`,
         });
       }
-      
+
       // Log tổng kích thước
-      console.log(`Tổng kích thước ảnh: ${(totalSize/1024/1024).toFixed(2)}MB`);
-      
+      console.log(
+        `Tổng kích thước ảnh: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
+      );
+
       // Nếu tổng kích thước quá lớn, hiển thị cảnh báo
-      if (totalSize > 10 * 1024 * 1024) { // 10MB
+      if (totalSize > 10 * 1024 * 1024) {
+        // 10MB
         Alert.alert(
           "Cảnh báo",
-          `Tổng kích thước ảnh (${(totalSize/1024/1024).toFixed(2)}MB) có thể quá lớn. Bạn có muốn tiếp tục?`,
+          `Tổng kích thước ảnh (${(totalSize / 1024 / 1024).toFixed(
+            2
+          )}MB) có thể quá lớn. Bạn có muốn tiếp tục?`,
           [
-            { text: "Hủy", onPress: () => setIsUploading(false), style: "cancel" },
-            { text: "Tiếp tục", onPress: () => performUpdate(formData) }
+            {
+              text: "Hủy",
+              onPress: () => setIsUploading(false),
+              style: "cancel",
+            },
+            { text: "Tiếp tục", onPress: () => performUpdate(formData) },
           ]
         );
       } else {
@@ -202,16 +227,16 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
       setIsUploading(false);
     }
   };
-  
+
   const performUpdate = async (formData) => {
     try {
       const response = await axiosClient.post(
         "/staff/orders/washing/receive",
         formData,
         {
-          headers: { 
+          headers: {
             "Content-Type": "multipart/form-data",
-            "Accept": "application/json"
+            Accept: "application/json",
           },
           timeout: 60000, // 60 giây
         }
@@ -220,14 +245,18 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
       console.log("Cập nhật thành công:", response.data);
       Alert.alert("Thành công", "Đơn hàng đã chuyển sang trạng thái WASHING!", [
         {
-          text: "OK", 
-          onPress: handleGoBack
-        }
+          text: "OK",
+          onPress: handleGoBack,
+        },
       ]);
     } catch (error) {
-      console.error("Lỗi cập nhật:", error.response?.data || error.message || error);
-      
-      let errorMessage = "Không thể cập nhật trạng thái đơn hàng. Vui lòng thử lại.";
+      console.error(
+        "Lỗi cập nhật:",
+        error.response?.data || error.message || error
+      );
+
+      let errorMessage =
+        "Không thể cập nhật trạng thái đơn hàng. Vui lòng thử lại.";
       if (error.response) {
         if (error.response.status === 400) {
           errorMessage = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
@@ -236,12 +265,13 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
         } else if (error.response.status === 404) {
           errorMessage = "Không tìm thấy đơn hàng.";
         } else if (error.response.status === 413) {
-          errorMessage = "Kích thước ảnh quá lớn. Vui lòng giảm số lượng ảnh hoặc chụp với độ phân giải thấp hơn.";
+          errorMessage =
+            "Kích thước ảnh quá lớn. Vui lòng giảm số lượng ảnh hoặc chụp với độ phân giải thấp hơn.";
         } else if (error.response.status === 500) {
           errorMessage = "Lỗi cập nhật đơn hàng. Vui lòng thử lại sau.";
         }
       }
-      
+
       Alert.alert("Lỗi", errorMessage);
     } finally {
       setIsUploading(false);
@@ -254,11 +284,11 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
       className="flex-1"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <Animated.View 
+        <Animated.View
           className="flex-1 bg-white"
           style={{
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
+            transform: [{ translateY: slideAnim }],
           }}
         >
           <ScrollView className="flex-1 p-4">
@@ -276,7 +306,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="person-outline" size={18} color="#4B5563" />
@@ -291,7 +321,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="shirt-outline" size={18} color="#4B5563" />
@@ -306,29 +336,42 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View>
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="calendar-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Ngày đặt: {format(new Date(orderDetail.orderDate), 'dd/MM/yyyy', { locale: vi })}
+                    Ngày đặt:{" "}
+                    {format(new Date(orderDetail.orderDate), "dd/MM/yyyy", {
+                      locale: vi,
+                    })}
                   </Text>
                 </View>
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian lấy: {format(new Date(orderDetail.pickupTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    Thời gian lấy:{" "}
+                    {format(
+                      new Date(orderDetail.pickupTime),
+                      "dd/MM/yyyy HH:mm",
+                      { locale: vi }
+                    )}
                   </Text>
                 </View>
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian giao: {format(new Date(orderDetail.deliveryTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    Thời gian giao:{" "}
+                    {format(
+                      new Date(orderDetail.deliveryTime),
+                      "dd/MM/yyyy HH:mm",
+                      { locale: vi }
+                    )}
                   </Text>
                 </View>
               </View>
             </View>
-            
+
             {/* Note Input */}
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">
@@ -343,7 +386,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                 numberOfLines={3}
               />
             </View>
-            
+
             {/* Photo Gallery */}
             <View className="mb-6">
               <View className="flex-row justify-between items-center mb-3">
@@ -351,25 +394,29 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                   Hình ảnh đính kèm
                 </Text>
                 <View className="flex-row">
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={handlePickImage}
                     className="bg-blue-500 px-3 py-2 rounded-lg flex-row items-center mr-2"
                   >
                     <Ionicons name="image-outline" size={18} color="white" />
-                    <Text className="text-white font-medium ml-1">Chọn ảnh</Text>
+                    <Text className="text-white font-medium ml-1">
+                      Chọn ảnh
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={handleTakePhoto}
                     className="bg-green-500 px-3 py-2 rounded-lg flex-row items-center"
                   >
                     <Ionicons name="camera-outline" size={18} color="white" />
-                    <Text className="text-white font-medium ml-1">Chụp ảnh</Text>
+                    <Text className="text-white font-medium ml-1">
+                      Chụp ảnh
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               {photos.length > 0 ? (
-                <ScrollView 
+                <ScrollView
                   horizontal={true}
                   showsHorizontalScrollIndicator={false}
                   className="flex-row mb-2"
@@ -379,7 +426,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                       key={index}
                       className="mr-3"
                       style={{
-                        transform: [{ scale: fadeAnim }]
+                        transform: [{ scale: fadeAnim }],
                       }}
                     >
                       <Image
@@ -406,23 +453,29 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                 </View>
               )}
             </View>
-            
+
             {/* Action Button */}
             <View className="mb-8">
               <TouchableOpacity
                 onPress={handleUpdateOrderToWashing}
                 disabled={isUploading}
-                className={`py-3 rounded-lg items-center justify-center ${isUploading ? 'bg-indigo-300' : 'bg-indigo-600'}`}
+                className={`py-3 rounded-lg items-center justify-center ${
+                  isUploading ? "bg-indigo-300" : "bg-indigo-600"
+                }`}
               >
                 {isUploading ? (
                   <View className="flex-row items-center">
                     <ActivityIndicator size="small" color="white" />
-                    <Text className="text-white font-bold ml-2">Đang chuyển trạng thái...</Text>
+                    <Text className="text-white font-bold ml-2">
+                      Đang chuyển trạng thái...
+                    </Text>
                   </View>
                 ) : (
                   <View className="flex-row items-center">
                     <Ionicons name="water-outline" size={20} color="white" />
-                    <Text className="text-white font-bold ml-2">CHUYỂN SANG TRẠNG THÁI GIẶT</Text>
+                    <Text className="text-white font-bold ml-2">
+                      CHUYỂN SANG TRẠNG THÁI GIẶT
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>

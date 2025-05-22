@@ -56,14 +56,21 @@ const OrderListScreen = ({ navigation }) => {
 
 
   const handleReceiveCheck = async (orderId) => {
-    try {
-      await reciveToChecking(orderId);
-      Alert.alert("Thành công", "Đơn hàng đã được nhận check!");
-      fetchOrderInstore();
-    } catch (error) {
-      Alert.alert("Lỗi", error.message || "Không thể nhận check đơn hàng.");
-    }
-  };
+  try {
+    await reciveToChecking(orderId);
+    Alert.alert("Thành công", "Đơn hàng đã được nhận check!", [
+      {
+        text: "OK", 
+        onPress: () => {
+          navigation.navigate("OrderCheckingListScreen");
+        }
+      }
+    ]);
+    fetchOrderInstore();
+  } catch (error) {
+    Alert.alert("Lỗi", error.message || "Không thể nhận check đơn hàng.");
+  }
+};
 
   // const handleChatPress = (customerId, customerName) => {
   //   navigation.navigate('ChatScreen', {

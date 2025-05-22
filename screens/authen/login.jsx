@@ -26,7 +26,7 @@ export default function LoginScreen({ navigation }) {
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
-  const { saveToken } = useNotificationStore();
+  const { saveToken, deleteToken } = useNotificationStore();
 
   const validatePhone = () => {
     if (!phoneNumber) {
@@ -87,9 +87,11 @@ export default function LoginScreen({ navigation }) {
         setLoginError(result?.message || "Sai số điện thoại hoặc mật khẩu");
       }
       const userRole = useAuthStore.getState().userDetail?.role;
+      await saveToken(result.userId);
 
       if (userRole === "Customer" || userRole === "Admin") {
         // User has an invalid role for this app
+        await deleteToken(result.userId);
         const logout = useAuthStore.getState().logout;
         await logout(); // Log them out immediately
         Alert.alert(
@@ -97,8 +99,6 @@ export default function LoginScreen({ navigation }) {
           "Bạn không có quyền đăng nhập vào ứng dụng này."
         );
       }
-
-      await saveToken(result.userId);
     } catch (error) {
       // Catch errors specifically from the login API call
       console.error("Login API error:", error);

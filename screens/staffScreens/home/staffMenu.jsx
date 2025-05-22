@@ -136,20 +136,6 @@ export default function StaffrMenu({ navigation }) {
                 {userDetail?.fullName}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("DriverAccountScreen")}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="notifications-outline" size={32} color="#fff" />
-                {notificationCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {notificationCount > 99 ? "99+" : notificationCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
           </View>
         </View>
 

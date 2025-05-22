@@ -12,11 +12,15 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axiosClient from "../../../api/config/axiosClient";
-import { Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from "react-native";
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const OrderDetailScreen = ({ route, navigation }) => {
   const { orderId, orderDetail } = route.params;
@@ -24,11 +28,11 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  
+
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  
+
   useEffect(() => {
     // Animation when screen loads
     Animated.parallel([
@@ -41,7 +45,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
-      })
+      }),
     ]).start();
   }, []);
 
@@ -78,7 +82,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         tension: 40,
         useNativeDriver: true,
       }).start();
-      
+
       setPhotos((prevPhotos) => [...prevPhotos, selectedPhoto]);
     }
   };
@@ -117,7 +121,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         tension: 40,
         useNativeDriver: true,
       }).start();
-      
+
       setPhotos((prevPhotos) => [...prevPhotos, ...result.assets]);
     }
   };
@@ -130,28 +134,36 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
     setIsUploading(true);
     const formData = new FormData();
-    
+
     // Thêm orderId vào formData
     formData.append("orderId", orderId);
-    
+
     // Thêm notes vào formData
     formData.append("notes", note);
-    
+
     // Thêm files vào formData đúng định dạng
     try {
       let totalSize = 0;
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
-        
+
         // Kiểm tra kích thước file
         if (photo.fileSize) {
           totalSize += photo.fileSize;
           // Nếu ảnh quá lớn, hiển thị cảnh báo
-          if (photo.fileSize > 5 * 1024 * 1024) { // 5MB
-            Alert.alert("Cảnh báo", `Ảnh thứ ${i+1} có kích thước lớn (${(photo.fileSize/1024/1024).toFixed(2)}MB) và có thể gây lỗi khi upload.`);
+          if (photo.fileSize > 5 * 1024 * 1024) {
+            // 5MB
+            Alert.alert(
+              "Cảnh báo",
+              `Ảnh thứ ${i + 1} có kích thước lớn (${(
+                photo.fileSize /
+                1024 /
+                1024
+              ).toFixed(2)}MB) và có thể gây lỗi khi upload.`
+            );
           }
         }
-        
+
         // Quan trọng: Tên tham số phải là 'files' (số nhiều, không thêm index)
         formData.append("files", {
           uri: photo.uri,
@@ -159,18 +171,27 @@ const OrderDetailScreen = ({ route, navigation }) => {
           name: photo.fileName || `photo_${i + 1}.jpg`,
         });
       }
-      
+
       // Log tổng kích thước
-      console.log(`Tổng kích thước ảnh: ${(totalSize/1024/1024).toFixed(2)}MB`);
-      
+      console.log(
+        `Tổng kích thước ảnh: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
+      );
+
       // Nếu tổng kích thước quá lớn, hiển thị cảnh báo
-      if (totalSize > 10 * 1024 * 1024) { // 10MB
+      if (totalSize > 10 * 1024 * 1024) {
+        // 10MB
         Alert.alert(
           "Cảnh báo",
-          `Tổng kích thước ảnh (${(totalSize/1024/1024).toFixed(2)}MB) có thể quá lớn. Bạn có muốn tiếp tục?`,
+          `Tổng kích thước ảnh (${(totalSize / 1024 / 1024).toFixed(
+            2
+          )}MB) có thể quá lớn. Bạn có muốn tiếp tục?`,
           [
-            { text: "Hủy", onPress: () => setIsUploading(false), style: "cancel" },
-            { text: "Tiếp tục", onPress: () => performUpload(formData) }
+            {
+              text: "Hủy",
+              onPress: () => setIsUploading(false),
+              style: "cancel",
+            },
+            { text: "Tiếp tục", onPress: () => performUpload(formData) },
           ]
         );
       } else {
@@ -178,43 +199,52 @@ const OrderDetailScreen = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error("Lỗi chuẩn bị dữ liệu:", error);
-      Alert.alert("Lỗi", "Không thể chuẩn bị dữ liệu upload. Vui lòng thử lại.");
+      Alert.alert(
+        "Lỗi",
+        "Không thể chuẩn bị dữ liệu upload. Vui lòng thử lại."
+      );
       setIsUploading(false);
     }
   };
-  
+
   const performUpload = async (formData) => {
     try {
       const response = await axiosClient.post(
         "/staff/orders/checking/update",
         formData,
         {
-          headers: { 
+          headers: {
             "Content-Type": "multipart/form-data",
-            "Accept": "application/json"
+            Accept: "application/json",
           },
           timeout: 60000, // 60 giây
         }
       );
 
       console.log("Upload response:", response.data);
-      
+
       // Cập nhật danh sách ảnh từ response
       if (response.data && response.data.photoUrls) {
         const uploadedPhotos = response.data.photoUrls.map((item) => ({
           uri: item.photoUrl,
           createdAt: item.createdAt,
         }));
-        
+
         setPhotos(uploadedPhotos);
         setNote(""); // Xóa note sau khi upload thành công
         Alert.alert("Thành công", "Ảnh và ghi chú đã được cập nhật!");
       } else {
-        Alert.alert("Thông báo", "Cập nhật thành công nhưng không nhận được thông tin ảnh.");
+        Alert.alert(
+          "Thông báo",
+          "Cập nhật thành công nhưng không nhận được thông tin ảnh."
+        );
       }
     } catch (error) {
-      console.error("Lỗi upload:", error.response?.data || error.message || error);
-      
+      console.error(
+        "Lỗi upload:",
+        error.response?.data || error.message || error
+      );
+
       let errorMessage = "Không thể upload ảnh. Vui lòng thử lại.";
       if (error.response) {
         if (error.response.status === 400) {
@@ -224,12 +254,13 @@ const OrderDetailScreen = ({ route, navigation }) => {
         } else if (error.response.status === 404) {
           errorMessage = "Không tìm thấy đơn hàng.";
         } else if (error.response.status === 413) {
-          errorMessage = "Kích thước ảnh quá lớn. Vui lòng giảm số lượng ảnh hoặc chụp với độ phân giải thấp hơn.";
+          errorMessage =
+            "Kích thước ảnh quá lớn. Vui lòng giảm số lượng ảnh hoặc chụp với độ phân giải thấp hơn.";
         } else if (error.response.status === 500) {
           errorMessage = "Lỗi upload ảnh. Vui lòng thử lại sau.";
         }
       }
-      
+
       Alert.alert("Lỗi", errorMessage);
     } finally {
       setIsUploading(false);
@@ -238,18 +269,27 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
   const handleConfirmOrder = async () => {
     setIsConfirming(true);
+    if (!note) {
+      Alert.alert("Lỗi", "Vui lòng nhập ghi chú trước khi xác nhận đơn hàng.");
+      setIsConfirming(false);
+      return;
+    }
+    if (photos.length === 0) {
+      Alert.alert("Lỗi", "Vui lòng upload ảnh trước khi xác nhận đơn hàng.");
+      setIsConfirming(false);
+      return;
+    }
     try {
       await axiosClient.post(
         `staff/orders/checking/confirm?orderId=${orderId}&notes=${note}`
       );
       Alert.alert("Thành công", "Đơn hàng đã được xác nhận!", [
         {
-          text: "OK", 
+          text: "OK",
           onPress: () => {
-            // Sau khi xác nhận, quay lại màn hình danh sách thay vì điều hướng tới một màn hình không tồn tại
-            navigation.goBack();
-          }
-        }
+            navigation.navigate("OrderListCheckedScreen");
+          },
+        },
       ]);
     } catch (error) {
       console.error(error);
@@ -265,11 +305,11 @@ const OrderDetailScreen = ({ route, navigation }) => {
       className="flex-1"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <Animated.View 
+        <Animated.View
           className="flex-1 bg-white"
           style={{
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
+            transform: [{ translateY: slideAnim }],
           }}
         >
           <ScrollView className="flex-1 p-4">
@@ -287,7 +327,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="person-outline" size={18} color="#4B5563" />
@@ -302,7 +342,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="shirt-outline" size={18} color="#4B5563" />
@@ -317,29 +357,42 @@ const OrderDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-              
+
               <View>
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="calendar-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Ngày đặt: {format(new Date(orderDetail.orderDate), 'dd/MM/yyyy', { locale: vi })}
+                    Ngày đặt:{" "}
+                    {format(new Date(orderDetail.orderDate), "dd/MM/yyyy", {
+                      locale: vi,
+                    })}
                   </Text>
                 </View>
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian lấy: {format(new Date(orderDetail.pickupTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    Thời gian lấy:{" "}
+                    {format(
+                      new Date(orderDetail.pickupTime),
+                      "dd/MM/yyyy HH:mm",
+                      { locale: vi }
+                    )}
                   </Text>
                 </View>
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian giao: {format(new Date(orderDetail.deliveryTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    Thời gian giao:{" "}
+                    {format(
+                      new Date(orderDetail.deliveryTime),
+                      "dd/MM/yyyy HH:mm",
+                      { locale: vi }
+                    )}
                   </Text>
                 </View>
               </View>
             </View>
-            
+
             {/* Note Input */}
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">
@@ -354,7 +407,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                 numberOfLines={3}
               />
             </View>
-            
+
             {/* Photo Gallery */}
             <View className="mb-6">
               <View className="flex-row justify-between items-center mb-3">
@@ -362,25 +415,29 @@ const OrderDetailScreen = ({ route, navigation }) => {
                   Hình ảnh đính kèm
                 </Text>
                 <View className="flex-row">
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={handlePickImage}
                     className="bg-blue-500 px-3 py-2 rounded-lg flex-row items-center mr-2"
                   >
                     <Ionicons name="image-outline" size={18} color="white" />
-                    <Text className="text-white font-medium ml-1">Chọn ảnh</Text>
+                    <Text className="text-white font-medium ml-1">
+                      Chọn ảnh
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={handleTakePhoto}
                     className="bg-green-500 px-3 py-2 rounded-lg flex-row items-center"
                   >
                     <Ionicons name="camera-outline" size={18} color="white" />
-                    <Text className="text-white font-medium ml-1">Chụp ảnh</Text>
+                    <Text className="text-white font-medium ml-1">
+                      Chụp ảnh
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               {photos.length > 0 ? (
-                <ScrollView 
+                <ScrollView
                   horizontal={true}
                   showsHorizontalScrollIndicator={false}
                   className="flex-row mb-2"
@@ -390,7 +447,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                       key={index}
                       className="mr-3"
                       style={{
-                        transform: [{ scale: fadeAnim }]
+                        transform: [{ scale: fadeAnim }],
                       }}
                     >
                       <Image
@@ -417,41 +474,61 @@ const OrderDetailScreen = ({ route, navigation }) => {
                 </View>
               )}
             </View>
-            
+
             {/* Action Buttons */}
             <View className="mb-8">
               <TouchableOpacity
                 onPress={handleUploadPhoto}
                 disabled={isUploading}
-                className={`mb-3 py-3 rounded-lg items-center justify-center ${isUploading ? 'bg-amber-300' : 'bg-amber-500'}`}
+                className={`mb-3 py-3 rounded-lg items-center justify-center ${
+                  isUploading ? "bg-amber-300" : "bg-amber-500"
+                }`}
               >
                 {isUploading ? (
                   <View className="flex-row items-center">
                     <ActivityIndicator size="small" color="white" />
-                    <Text className="text-white font-bold ml-2">Đang Upload...</Text>
+                    <Text className="text-white font-bold ml-2">
+                      Đang Upload...
+                    </Text>
                   </View>
                 ) : (
                   <View className="flex-row items-center">
-                    <Ionicons name="cloud-upload-outline" size={20} color="white" />
-                    <Text className="text-white font-bold ml-2">UPLOAD ẢNH VÀ GHI CHÚ</Text>
+                    <Ionicons
+                      name="cloud-upload-outline"
+                      size={20}
+                      color="white"
+                    />
+                    <Text className="text-white font-bold ml-2">
+                      UPLOAD ẢNH VÀ GHI CHÚ
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 onPress={handleConfirmOrder}
                 disabled={isConfirming}
-                className={`py-3 rounded-lg items-center justify-center ${isConfirming ? 'bg-blue-300' : 'bg-blue-500'}`}
+                className={`py-3 rounded-lg items-center justify-center ${
+                  isConfirming ? "bg-blue-300" : "bg-blue-500"
+                }`}
               >
                 {isConfirming ? (
                   <View className="flex-row items-center">
                     <ActivityIndicator size="small" color="white" />
-                    <Text className="text-white font-bold ml-2">Đang Xác Nhận...</Text>
+                    <Text className="text-white font-bold ml-2">
+                      Đang Xác Nhận...
+                    </Text>
                   </View>
                 ) : (
                   <View className="flex-row items-center">
-                    <Ionicons name="checkmark-circle-outline" size={20} color="white" />
-                    <Text className="text-white font-bold ml-2">XÁC NHẬN ĐƠN HÀNG</Text>
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color="white"
+                    />
+                    <Text className="text-white font-bold ml-2">
+                      XÁC NHẬN ĐƠN HÀNG
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
