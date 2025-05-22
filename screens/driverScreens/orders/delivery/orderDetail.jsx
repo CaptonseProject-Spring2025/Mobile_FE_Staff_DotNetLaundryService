@@ -139,6 +139,7 @@ const OrderDetail = ({ navigation, route }) => {
     cancelDelivery,
     confirmDelivery,
     isLoadingConfirmDelivery,
+    confirmDeliveryError,
   } = useOrderStore();
   const { createPayment, isLoadingPayment } = usePaymentStore();
   const [paymentSuccess, setPaymentSuccess] = useState(
@@ -348,34 +349,27 @@ const OrderDetail = ({ navigation, route }) => {
 
       setCompleteModalVisible(false);
       // Call the API
-      await confirmDelivery(formData);
-      // Close modal and reset values
-      setCompleteNote("");
-      setImages([]);
-
-      Toast.show({
-        type: "success",
-        text1: "Đơn hàng đã hoàn thành",
-        text2: "Xác nhận lấy hàng thành công",
-      });
-      navigation.navigate("DriverDeliveryScreen");
+      const response = await confirmDelivery(formData);
+      if (response && response.status === 200) {
+        // Close modal and reset values
+        setCompleteNote("");
+        setImages([]);
+        Toast.show({
+          type: "success",
+          text1: "Đơn hàng đã hoàn thành",
+          text2: "Xác nhận lấy hàng thành công",
+        });
+        navigation.navigate("DriverDeliveryScreen");
+      }
     } catch (error) {
-      console.error("Error confirming pick up:", error);
-
-      // Show specific validation errors if available
-      const errorMsg = error.response?.data?.errors?.notes
-        ? error.response.data.errors.notes[0]
-        : "Không thể xác nhận lấy hàng";
-
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: errorMsg,
-      });
-      console.log("Confirm pick up error:", error.response?.data);
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || confirmDeliveryError,
+        [{ text: "OK" }]
+      );
+      console.error("Error confirming pick up:", error.response.data.message);
     }
   };
-
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],

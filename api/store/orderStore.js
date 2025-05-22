@@ -168,11 +168,11 @@ const useOrderStore = create((set) => ({
         }
       );
       set({ isLoadingConfirmDelivery: false });
-      return response.data;
+      return response;
     } catch (error) {
-      console.error("Error confirming delivery:", error);
+      console.error("Error confirming delivery:", error.response?.data?.message);
       set({
-        confirmDeliveryError: error.message,
+        confirmDeliveryError: error.response?.data?.message,
         isLoadingConfirmDelivery: false,
       });
     }
