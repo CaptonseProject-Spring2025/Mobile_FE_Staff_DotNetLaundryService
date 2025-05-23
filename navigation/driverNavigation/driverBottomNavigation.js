@@ -5,6 +5,7 @@ import {
   DriverAccountScreen,
   DriverChatScreen,
 } from "./driverNavigation.js";
+import StatisticScreen from "../../screens/driverScreens/statistic/statisticScreen";
 import Octicons from "react-native-vector-icons/Octicons";
 const Tab = createBottomTabNavigator();
 
@@ -39,9 +40,10 @@ const DriverBottomNavigationTab = () => {
       />
       <Tab.Screen
         name="Thống kê"
-        component={DriverHomeScreen}
+        component={StatisticScreen}
         options={{
-          headerShown: false,
+          headerTitle: "Thống kê",
+          headerTitleAlign: "center",
         }}
       />
 
