@@ -140,6 +140,8 @@ const OrderDetail = ({ navigation, route }) => {
     confirmDelivery,
     isLoadingConfirmDelivery,
     confirmDeliveryError,
+    isLoadingCancelNoshow,
+    cancelNoshow,
   } = useOrderStore();
   const { createPayment, isLoadingPayment } = usePaymentStore();
   const [paymentSuccess, setPaymentSuccess] = useState(
@@ -468,6 +470,32 @@ const OrderDetail = ({ navigation, route }) => {
     );
   };
 
+  const handleCancelNoshow = async () => {
+    try {
+      if (!assignmentDetail || !assignmentDetail.orderId) {
+        Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng");
+        return;
+      }
+
+      const response = await cancelNoshow(assignmentDetail.orderId);
+
+      if (response && response.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã đánh dấu khách hàng không có mặt",
+        });
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error("Error when marking customer as not present:", error);
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Đã xảy ra lỗi khi xử lý yêu cầu"
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
@@ -483,7 +511,6 @@ const OrderDetail = ({ navigation, route }) => {
           </Text>
         </View>
       )}
-
       {/* Cancel Reason Modal */}
       <Modal
         animationType="slide"
@@ -577,7 +604,6 @@ const OrderDetail = ({ navigation, route }) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
       {/* Complete Order Modal */}
       <Modal
         animationType="slide"
@@ -673,7 +699,6 @@ const OrderDetail = ({ navigation, route }) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
       <ScrollView
         style={{ marginBottom: 20 }}
         showsVerticalScrollIndicator={false}
@@ -954,79 +979,117 @@ const OrderDetail = ({ navigation, route }) => {
         />
       </ScrollView>
       <View style={styles.buttonContainer}>
+        {/* No-show customer button */}
         <TouchableOpacity
           style={[
-            styles.button,
-            styles.cancelButton,
-            (isLoadingCancelDelivery || paymentSuccess) && {
+            styles.buttonNoShow,
+            (isLoadingCancelNoshow || paymentSuccess) && {
               backgroundColor: "#e9ecef",
               borderColor: "#ced4da",
-            }, // Adjusted disabled style
-            paymentSuccess && { opacity: 0.5 }, // Add opacity when payment is successful
+            },
+            paymentSuccess && { opacity: 0.5 },
           ]}
-          onPress={() => setCancelModalVisible(true)}
-          disabled={isLoadingCancelDelivery || paymentSuccess} // Keep existing disable logic
+          onPress={() => {
+            Alert.alert(
+              "Xác nhận",
+              "Bạn có muốn tiếp tục không?",
+              [
+                { text: "Huỷ", style: "cancel" },
+                { text: "Xác nhận", onPress: handleCancelNoshow },
+              ]
+            );
+          }}
+          disabled={isLoadingCancelNoshow || paymentSuccess}
         >
-          {isLoadingCancelDelivery ? (
-            <ActivityIndicator size="small" color="#6c757d" /> // Adjusted color
+          {isLoadingCancelNoshow ? (
+            <ActivityIndicator size="small" color="#6c757d" />
           ) : (
             <Text
               style={[
-                styles.cancelButtonText,
+                styles.noShowButtonText,
                 paymentSuccess && { color: "#6c757d" },
               ]}
             >
-              Hủy đơn
-            </Text> // Adjusted text color when disabled
+              Khách không có mặt
+            </Text>
           )}
         </TouchableOpacity>
 
-        {/* Conditional rendering based on payment method or success */}
-        {selectedPayment === "cash" ||
-        (paymentSuccess && selectedPayment === "cash") ? ( // Show complete if cash selected OR if payment was successful via cash (though success implies transfer here)
+        <View style={styles.bottomButtonRow}>
           <TouchableOpacity
             style={[
               styles.button,
-              styles.completeButton,
-              isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
-            ]}
-            onPress={() => setCompleteModalVisible(true)}
-            disabled={isLoadingConfirmDelivery}
-          >
-            {isLoadingConfirmDelivery ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
-            )}
-          </TouchableOpacity>
-        ) : (
-          // Show Pay/Complete based on transfer selection or success
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.completeButton,
-              (isLoadingPayment || isLoadingConfirmDelivery) && {
-                backgroundColor: "#6c757d",
+              styles.cancelButton,
+              (isLoadingCancelDelivery || paymentSuccess) && {
+                backgroundColor: "#e9ecef",
+                borderColor: "#ced4da",
               },
+              paymentSuccess && { opacity: 0.5 },
             ]}
-            // If payment is successful, show 'Complete Order', otherwise show 'Pay'
-            onPress={
-              paymentSuccess
-                ? () => setCompleteModalVisible(true)
-                : handleMakePayment
-            }
-            disabled={isLoadingPayment || isLoadingConfirmDelivery}
+            onPress={() => setCancelModalVisible(true)}
+            disabled={isLoadingCancelDelivery || paymentSuccess}
           >
-            {isLoadingPayment || isLoadingConfirmDelivery ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+            {isLoadingCancelDelivery ? (
+              <ActivityIndicator size="small" color="#6c757d" />
             ) : (
-              // Change button text based on payment success
-              <Text style={styles.completeButtonText}>
-                {paymentSuccess ? "Hoàn thành đơn" : "Thanh toán"}
+              <Text
+                style={[
+                  styles.cancelButtonText,
+                  paymentSuccess && { color: "#6c757d" },
+                ]}
+              >
+                Hủy đơn
               </Text>
             )}
           </TouchableOpacity>
-        )}
+
+          {/* Conditional rendering based on payment method or success */}
+          {selectedPayment === "cash" ||
+          (paymentSuccess && selectedPayment === "cash") ? (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.completeButton,
+                isLoadingConfirmDelivery && { backgroundColor: "#6c757d" },
+              ]}
+              onPress={() => setCompleteModalVisible(true)}
+              disabled={isLoadingConfirmDelivery}
+            >
+              {isLoadingConfirmDelivery ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            // Show Pay/Complete based on transfer selection or success
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.completeButton,
+                (isLoadingPayment || isLoadingConfirmDelivery) && {
+                  backgroundColor: "#6c757d",
+                },
+              ]}
+              // If payment is successful, show 'Complete Order', otherwise show 'Pay'
+              onPress={
+                paymentSuccess
+                  ? () => setCompleteModalVisible(true)
+                  : handleMakePayment
+              }
+              disabled={isLoadingPayment || isLoadingConfirmDelivery}
+            >
+              {isLoadingPayment || isLoadingConfirmDelivery ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                // Change button text based on payment success
+                <Text style={styles.completeButtonText}>
+                  {paymentSuccess ? "Hoàn thành đơn" : "Thanh toán"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -1150,11 +1213,31 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: "#fff",
+    gap: 10,
+  },
+  bottomButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  buttonNoShow: {
+    backgroundColor: "#fff0f0",
+    borderWidth: 1,
+    borderColor: "#ffcccc",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  noShowButtonText: {
+    color: "#d9534f",
+    fontWeight: "600",
+    fontSize: 16,
   },
   button: {
     paddingVertical: 12,

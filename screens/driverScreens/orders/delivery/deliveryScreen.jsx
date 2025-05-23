@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { TextInput } from "react-native-paper";
 import DeliveryList from "./deliveryList";
 const DeliveryScreen = () => {
@@ -20,7 +20,5 @@ const DeliveryScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({});
 
 export default DeliveryScreen;

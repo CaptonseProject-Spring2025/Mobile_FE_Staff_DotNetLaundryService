@@ -136,5 +136,5 @@ export default function usePushNotifications() {
     };
   }, [navigation, fetchNotifications]);
 
-  return null; // No UI to render
+  return null; 
 }

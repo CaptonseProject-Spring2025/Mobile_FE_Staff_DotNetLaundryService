@@ -250,5 +250,25 @@ const useOrderStore = create((set) => ({
       });
     }
   },
+
+  isLoadingCancelNoshow: false,
+  cancelNoshowError: null,
+  cancelNoshow: async (orderId) => {
+    try {
+      set({ isLoadingCancelNoshow: true, cancelNoshowError: null });
+      const response = await axiosClient.post(
+        `/driver/${orderId}/delivery/cancel/noshow`
+      );
+      set({ isLoadingCancelNoshow: false });
+      return response.data;
+    } catch (error) {
+      console.error("Error confirming delivery:", error);
+      set({
+        cancelNoshowError: error.response.data.message,
+        isLoadingCancelNoshow: false,
+      });
+    }
+  },
+
 }));
 export default useOrderStore;
