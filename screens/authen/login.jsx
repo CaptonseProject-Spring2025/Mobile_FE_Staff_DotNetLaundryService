@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }) {
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const { login, message } = useAuthStore();
   const { saveToken, deleteToken } = useNotificationStore();
 
   const validatePhone = () => {
@@ -84,10 +84,14 @@ export default function LoginScreen({ navigation }) {
     try {
       const result = await login(phoneNumber, password);
       if (!result || !result.success) {
-        setLoginError(result?.message || "Sai số điện thoại hoặc mật khẩu");
+        setLoginError(
+          result?.data?.message || "Sai thông tin đăng nhập. Vui lòng thử lại."
+        );
       }
       const userRole = useAuthStore.getState().userDetail?.role;
-      await saveToken(result.userId);
+      if (result && result.success) {
+        await saveToken(result.userId);
+      }
 
       if (userRole === "Customer" || userRole === "Admin") {
         // User has an invalid role for this app
@@ -193,6 +197,8 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.errorText}>{passwordError}</Text>
           ) : loginError ? (
             <Text style={styles.errorText}>{loginError}</Text>
+          ) : message ? (
+            <Text style={styles.errorText}>{message}</Text>
           ) : null}
         </View>
 
