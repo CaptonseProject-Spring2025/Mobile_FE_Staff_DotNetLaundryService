@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,74 +6,123 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  SafeAreaView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Dimensions } from "react-native";
-
-const { width } = Dimensions.get("window");
+import useStaticsStore from "../../../api/store/statistcStore";
 
 const StatisticScreen = () => {
-  const [timeRange, setTimeRange] = useState("day"); // 'day', 'week', 'month'
+  const [timeRange, setTimeRange] = useState("day");
+  const {
+    dailyStats,
+    weeklyStats,
+    monthlyStats,
+    dailyList,
+    weeklyList,
+    monthlyList,
+    isLoading,
+    Error,
+    fetchDailyStatistics,
+    fetchDailyStatisticsList,
+    fetchWeeklyStatistics,
+    fetchWeeklyStatisticsList,
+    fetchMonthlyStatistics,
+    fetchMonthlyStatisticsList,
+  } = useStaticsStore();
 
-  // Sample data - sẽ thay bằng data thực tế từ API
-  const statisticData = {
-    day: {
-      completedTasks: 5,
-      revenue: 250000,
-      salary: 100000,
-      expenses: 30000,
-      tasks: [
-        { id: "1", orderCode: "#123456", amount: 50000, time: "09:30" },
-        { id: "2", orderCode: "#123457", amount: 45000, time: "10:45" },
-        { id: "3", orderCode: "#123458", amount: 60000, time: "13:20" },
-        { id: "4", orderCode: "#123459", amount: 55000, time: "15:10" },
-        { id: "5", orderCode: "#123460", amount: 40000, time: "17:30" },
-      ],
-    },
-    week: {
-      completedTasks: 32,
-      revenue: 1600000,
-      salary: 670000,
-      expenses: 150000,
-      tasks: [
-        { id: "1", orderCode: "#123461", amount: 50000, time: "Thứ 2" },
-        { id: "2", orderCode: "#123462", amount: 250000, time: "Thứ 3" },
-        { id: "3", orderCode: "#123463", amount: 300000, time: "Thứ 4" },
-        { id: "4", orderCode: "#123464", amount: 280000, time: "Thứ 5" },
-        { id: "5", orderCode: "#123465", amount: 320000, time: "Thứ 6" },
-        { id: "6", orderCode: "#123466", amount: 240000, time: "Thứ 7" },
-        { id: "7", orderCode: "#123467", amount: 160000, time: "Chủ nhật" },
-      ],
-    },
-    month: {
-      completedTasks: 120,
-      revenue: 6000000,
-      salary: 2500000,
-      expenses: 600000,
-      tasks: [
-        { id: "1", orderCode: "Tuần 1", amount: 1500000, time: "01-07/10" },
-        { id: "2", orderCode: "Tuần 2", amount: 1600000, time: "08-14/10" },
-        { id: "3", orderCode: "Tuần 3", amount: 1450000, time: "15-21/10" },
-        { id: "4", orderCode: "Tuần 4", amount: 1450000, time: "22-31/10" },
-      ],
-    },
+  useEffect(() => {
+    fetchInitialStatistics();
+  }, []);
+
+  const fetchInitialStatistics = async () => {
+    const today = getTodayDate();
+    await fetchDailyStatistics(today);
+    await fetchDailyStatisticsList(today);
   };
 
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  const getCurrentYearMonth = () => {
+    const today = new Date();
+    return {
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+    };
+  };
+
+  const handleDayPress = async () => {
+    setTimeRange("day");
+    const today = getTodayDate();
+    await fetchDailyStatistics(today);
+    await fetchDailyStatisticsList(today);
+  };
+
+  const handleWeekPress = async () => {
+    setTimeRange("week");
+    const today = getTodayDate();
+    await fetchWeeklyStatistics(today);
+    await fetchWeeklyStatisticsList(today);
+  };
+
+  const handleMonthPress = async () => {
+    setTimeRange("month");
+    const { year, month } = getCurrentYearMonth();
+    await fetchMonthlyStatistics(year, month);
+    await fetchMonthlyStatisticsList(year, month);
+  };
   const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined) return "0 đ";
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " đ";
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.taskItem}>
-      <View>
-        <Text style={styles.orderCode}>{item.orderCode}</Text>
-        <Text style={styles.taskTime}>{item.time}</Text>
-      </View>
-      <Text style={styles.taskAmount}>{formatCurrency(item.amount)}</Text>
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    let assignmentStatusLabel = "";
+    if (item.assignmentStatus === "PICKUP_SUCCESS") {
+      assignmentStatusLabel = "Đơn đi lấy";
+    } else if (item.assignmentStatus === "DELIVERY_SUCCESS") {
+      assignmentStatusLabel = "Đơn đi giao";
+    } else {
+      assignmentStatusLabel = item.assignmentStatus || "";
+    }
 
-  const activeData = statisticData[timeRange];
+    return (
+      <View style={styles.taskItem}>
+        <View>
+          <Text style={styles.orderCode}>Mã đơn: {item.orderId}</Text>
+          <Text className="text-base font-medium">
+            Loại task: {assignmentStatusLabel}
+          </Text>
+          <Text style={styles.taskTime}>{item.completedAt}</Text>
+        </View>
+        <Text style={styles.taskAmount}>{formatCurrency(item.totalPrice)}</Text>
+      </View>
+    );
+  };
+
+  const renderEmptyList = () => {
+    return (
+      <View style={styles.emptyListContainer}>
+        <Text style={styles.emptyListText}>Chưa có thông tin</Text>
+      </View>
+    );
+  };
+
+  // Get current active data based on selected timeRange
+  const getCurrentData = () => {
+    if (timeRange === "day") return dailyStats;
+    if (timeRange === "week") return weeklyStats;
+    if (timeRange === "month") return monthlyStats;
+    return dailyStats;
+  };
+
+  const getCurrentList = () => {
+    if (timeRange === "day") return dailyList;
+    if (timeRange === "week") return weeklyList;
+    if (timeRange === "month") return monthlyList;
+    return dailyList; // default to daily
+  };
 
   const getMonthName = () => {
     const date = new Date();
@@ -87,7 +136,7 @@ const StatisticScreen = () => {
             styles.timeButton,
             timeRange === "day" && styles.activeTimeButton,
           ]}
-          onPress={() => setTimeRange("day")}
+          onPress={handleDayPress}
         >
           <Text
             style={[
@@ -103,7 +152,7 @@ const StatisticScreen = () => {
             styles.timeButton,
             timeRange === "week" && styles.activeTimeButton,
           ]}
-          onPress={() => setTimeRange("week")}
+          onPress={handleWeekPress}
         >
           <Text
             style={[
@@ -119,7 +168,7 @@ const StatisticScreen = () => {
             styles.timeButton,
             timeRange === "month" && styles.activeTimeButton,
           ]}
-          onPress={() => setTimeRange("month")}
+          onPress={handleMonthPress}
         >
           <Text
             style={[
@@ -139,44 +188,39 @@ const StatisticScreen = () => {
               : timeRange === "week"
               ? "Tuần này"
               : getMonthName()}
-          </Text>
-
+          </Text>{" "}
           <View style={styles.statRow}>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Tổng số chuyến</Text>
-              <Text style={styles.statValue}>{activeData.completedTasks}</Text>
+              <Text style={styles.statValue}>
+                {getCurrentData().totalOrdersCount}
+              </Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Tổng tiền thu hộ</Text>
               <Text style={styles.statValue}>
-                {formatCurrency(activeData.revenue)}
+                {formatCurrency(getCurrentData().cashTotalAmount)}
               </Text>
             </View>
           </View>
-
           <View style={styles.statRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Tiền lương</Text>
+              <Text style={styles.statLabel}>Tổng đơn tiền mặt</Text>
               <Text style={styles.statValue}>
-                {formatCurrency(activeData.salary)}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Chi phí ngoài</Text>
-              <Text style={styles.statValue}>
-                {formatCurrency(activeData.expenses)}
+                {getCurrentData().cashOrdersCount}
               </Text>
             </View>
           </View>
         </View>
 
         <View style={styles.tasksContainer}>
-          <Text style={styles.tasksTitle}>Chi tiết đơn hàng</Text>
+          <Text style={styles.tasksTitle}>Chi tiết đơn hàng</Text>{" "}
           <FlatList
-            data={activeData.tasks}
+            data={getCurrentList()}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => item.id || index.toString()}
             scrollEnabled={false}
+            ListEmptyComponent={renderEmptyList}
           />
         </View>
       </ScrollView>
@@ -294,6 +338,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#63B35C",
+  },
+  emptyListContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyListText: {
+    fontSize: 16,
+    color: "#666",
+    fontStyle: "italic",
+  },
+  taskType: {
+    fontSize: 16,
+    fontWeight: "medium",
+    color: "#333",
   },
 });
 

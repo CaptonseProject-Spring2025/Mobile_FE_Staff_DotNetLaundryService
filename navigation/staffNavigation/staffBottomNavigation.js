@@ -34,13 +34,6 @@ const StaffBottomNavigationTab = () => {
         }}
       />
       <Tab.Screen
-        name="Thống kê"
-        component={StaffHomeScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tab.Screen
         name="Tài khoản"
         component={StaffAccountScreen}
         options={{
