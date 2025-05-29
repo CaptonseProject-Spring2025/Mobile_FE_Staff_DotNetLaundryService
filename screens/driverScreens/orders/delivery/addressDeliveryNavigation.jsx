@@ -72,10 +72,10 @@ const AddressDeliveryNavigateMap = () => {
       const handleError = (error) => {
         console.error("Tracking error:", error);
       };
-      
+
       trackingService.startConnection(orderId);
       trackingService.onError(handleError);
-      
+
       return () => {
         trackingService.stopConnection();
         trackingService.removeErrorListener(handleError);
@@ -84,27 +84,69 @@ const AddressDeliveryNavigateMap = () => {
   }, [orderId]);
 
   // Request permission and get current location
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180; // φ in radians
-    const φ2 = (lat2 * Math.PI) / 180; // φ in radians
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180; // Δφ in radians
-    const Δλ = ((lon1 - lon1) * Math.PI) / 180; // Δλ in radians
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // haversine formula
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // c is the angular distance in radians
-
-    return R * c; // in meters
-  };
-
-  // Request permission and get current location
   useEffect(() => {
     let zoomTimerId; // Added to track timeout ID for cleanup
-    
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPermissionStatus(status);
+
+      if (status === "granted") {
+        try {
+          const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+
+          setDriverLocation({
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+          });
+
+          // Set user location from data passed in route params
+          if (
+            userData &&
+            userData.deliveryLatitude &&
+            userData.deliveryLongitude
+          ) {
+            setUserLocation({
+              latitude: userData.deliveryLatitude,
+              longitude: userData.deliveryLongitude,
+            });
+          }
+
+          // Initial zoom to driver location
+          zoomTimerId = setTimeout(() => {
+            if (cameraRef.current) {
+              cameraRef.current.setCamera({
+                centerCoordinate: [
+                  currentLocation.coords.longitude,
+                  currentLocation.coords.latitude,
+                ],
+                zoomLevel: 15,
+                animationDuration: 1000,
+              });
+            }
+          }, 1000);
+        } catch (error) {
+          console.error("Error getting location:", error);
+          // Fallback to default driver location
+          setDriverLocation({
+            latitude: 10.78535,
+            longitude: 106.61849,
+          });
+        }
+      }
+    })();
+
+    // Cleanup function to clear the timeout when component unmounts
+    return () => {
+      if (zoomTimerId) clearTimeout(zoomTimerId);
+    };
+  }, [userData]);
+  // Create a location tracking effect that updates more frequently
+  useEffect(() => {
+    let zoomTimerId;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermissionStatus(status);
@@ -161,65 +203,7 @@ const AddressDeliveryNavigateMap = () => {
       if (zoomTimerId) clearTimeout(zoomTimerId);
     };
   }, [userData]);
-  // Create a location tracking effect that updates more frequently
-  useEffect(() => {
-    let zoomTimerId;
-    
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionStatus(status);
 
-      if (status === "granted") {
-        try {
-          const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Highest,
-          });
-
-          setDriverLocation({
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
-          });
-
-          // Set user location from data passed in route params
-          if (
-            userData &&
-            userData.deliveryLatitude &&
-            userData.deliveryLongitude
-          ) {
-            setUserLocation({
-              latitude: userData.deliveryLatitude,
-              longitude: userData.deliveryLongitude,
-            });
-          }
-
-          // Initial zoom to driver location
-          zoomTimerId = setTimeout(() => {
-            if (cameraRef.current) {
-              cameraRef.current.setCamera({
-                centerCoordinate: [
-                  currentLocation.coords.longitude,
-                  currentLocation.coords.latitude,
-                ],
-                zoomLevel: 15,
-                animationDuration: 1000,
-              });
-            }
-          }, 1000);
-        } catch (error) {
-          console.error("Error getting location:", error);
-          // Fallback to default driver location
-          setDriverLocation({
-            latitude: 10.78535,            longitude: 106.61849,
-          });
-        }
-      }
-    })();
-    
-    // Cleanup function to clear the timeout when component unmounts
-    return () => {
-      if (zoomTimerId) clearTimeout(zoomTimerId);
-    };
-  }, [userData]);
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
     let locationSubscription = null;
@@ -231,12 +215,11 @@ const AddressDeliveryNavigateMap = () => {
           const subscription = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Balanced,
-              timeInterval: 3000,
-              distanceInterval: 2,
+              distanceInterval: 30, // Update every 30 meters
             },
             (location) => {
               if (!isMounted) return;
-              
+
               const newLocation = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -251,31 +234,16 @@ const AddressDeliveryNavigateMap = () => {
                   location.coords.longitude
                 );
               }
-
-              if (driverLocation) {
-                const distanceMoved = calculateDistance(
-                  driverLocation.latitude,
-                  driverLocation.longitude,
-                  newLocation.latitude,
-                  newLocation.longitude
-                );
-
-                if (distanceMoved > 2) {
-                  setDriverLocation(newLocation);
-                }
-              } else {
-                setDriverLocation(newLocation);
-              }
             }
           );
-          
+
           locationSubscription = subscription;
         } catch (error) {
           console.error("Error setting up location tracking:", error);
         }
       }
     };
-    
+
     startLocationTracking();
 
     return () => {
@@ -288,7 +256,7 @@ const AddressDeliveryNavigateMap = () => {
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
     let isMounted = true;
-    
+
     const updateInterval = setInterval(() => {
       if (isMounted) {
         setForceUpdate((prev) => prev + 1);
@@ -310,39 +278,30 @@ const AddressDeliveryNavigateMap = () => {
   // Get route when either location changes significantly
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchRoute = async () => {
       if (driverLocation && userLocation && !isFetchingRoute) {
         // Check if we need to fetch a new route
-        let shouldFetch = true;
-
-        if (lastFetchedLocation) {
-          const distanceMoved = calculateDistance(
-            lastFetchedLocation.latitude,
-            lastFetchedLocation.longitude,
-            driverLocation.latitude,
-            driverLocation.longitude
-          );
-          // Only fetch new route if moved more than 2 meters from last fetch
-          shouldFetch = distanceMoved > 2;
-        }
-
-        if (shouldFetch && isMounted) {
-          fetchDirectionsRoute();
+        if (isMounted) {
+          //Add debounce to avoid too frequent requests
+          clearTimeout(fetchRoute);
+          fetchRoute = setTimeout(() => {
+            fetchDirectionsRoute();
+          }, 1000);
         }
       }
     };
-    
     fetchRoute();
-    
+
     return () => {
       isMounted = false;
+      clearTimeout(fetchTime);
     };
   }, [driverLocation, userLocation]);
   //follow driver
   useEffect(() => {
     let cameraAnimationId = null;
-    
+
     if (isDrivingView && cameraRef.current) {
       // Set camera to follow user with heading when in driving mode
       try {
@@ -354,7 +313,7 @@ const AddressDeliveryNavigateMap = () => {
           zoomLevel: 17,
           animationDuration: 1000,
         });
-        
+
         // Store animation reference if available
         if (animation && animation.requestId) {
           cameraAnimationId = animation.requestId;
@@ -373,7 +332,7 @@ const AddressDeliveryNavigateMap = () => {
           pitch: 0,
           animationDuration: 1000,
         });
-        
+
         // Store animation reference if available
         if (animation && animation.requestId) {
           cameraAnimationId = animation.requestId;
@@ -382,7 +341,7 @@ const AddressDeliveryNavigateMap = () => {
         console.error("Error resetting camera:", error);
       }
     }
-    
+
     // Clean up animations
     return () => {
       if (cameraAnimationId && cameraRef.current) {
@@ -442,6 +401,7 @@ const AddressDeliveryNavigateMap = () => {
       setIsFetchingRoute(false);
     }
   };
+
   const handleLocationUpdate = (location) => {
     if (!location || !location.coords || !isMounted.current) return;
 
@@ -450,33 +410,19 @@ const AddressDeliveryNavigateMap = () => {
       longitude: location.coords.longitude,
     };
 
-    // Just update current location, but don't trigger route recalculation
+    // Update driver current location
     setCurrentDriverLocation(newLocation);
     setCurrentLocation(newLocation);
 
-    // Only update driver location and trigger recalculation if moved significantly
-    if (driverLocation) {
-      const distanceMoved = calculateDistance(
-        driverLocation.latitude,
-        driverLocation.longitude,
-        newLocation.latitude,
-        newLocation.longitude
-      );
-
-      if (distanceMoved > 2) {
-        setDriverLocation(newLocation);
-        // Trigger line update
-        setLineUpdateKey((prev) => prev + 1);
-      }
-    } else {
-      setDriverLocation(newLocation);
-      setLineUpdateKey((prev) => prev + 1);
-    }
+    // update driver location and force update the line
+    setDriverLocation(newLocation);
+    setLineUpdateKey((prev) => prev + 1);
   };
+
   // Start navigation animation if in driving view automatically
   useEffect(() => {
     let animationRef = null;
-    
+
     if (isDrivingView && routeCoordinates.length > 0 && duration) {
       setShowTravelingArrow(true);
       animationRef = Animated.timing(arrowPositionRef, {
@@ -485,10 +431,10 @@ const AddressDeliveryNavigateMap = () => {
         easing: Easing.linear,
         useNativeDriver: true,
       });
-      
+
       animationRef.start();
     }
-    
+
     // Clean up animation when component unmounts or dependencies change
     return () => {
       if (animationRef) {
