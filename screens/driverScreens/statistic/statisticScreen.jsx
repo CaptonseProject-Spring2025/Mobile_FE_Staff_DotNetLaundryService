@@ -188,7 +188,7 @@ const StatisticScreen = () => {
               : timeRange === "week"
               ? "Tuần này"
               : getMonthName()}
-          </Text>{" "}
+          </Text>
           <View style={styles.statRow}>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Tổng số chuyến</Text>
@@ -214,7 +214,7 @@ const StatisticScreen = () => {
         </View>
 
         <View style={styles.tasksContainer}>
-          <Text style={styles.tasksTitle}>Chi tiết đơn hàng</Text>{" "}
+          <Text style={styles.tasksTitle}>Chi tiết đơn hàng</Text>
           <FlatList
             data={getCurrentList()}
             renderItem={renderItem}
