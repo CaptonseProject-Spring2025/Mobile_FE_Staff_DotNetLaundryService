@@ -214,8 +214,9 @@ const AddressDeliveryNavigateMap = () => {
         try {
           const subscription = await Location.watchPositionAsync(
             {
-              accuracy: Location.Accuracy.Balanced,
-              distanceInterval: 30, // Update every 30 meters
+              accuracy: Location.Accuracy.High,
+              timeInterval: 5000, // Update every 5 seconds
+              distanceInterval: 30, // Update every 10 meters
             },
             (location) => {
               if (!isMounted) return;

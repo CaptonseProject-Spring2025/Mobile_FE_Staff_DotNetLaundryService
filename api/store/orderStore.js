@@ -115,21 +115,11 @@ const useOrderStore = create((set) => ({
       set({ isLoadingCancelPickUp: true, cancelPickUpError: null });
       const response = await axiosClient.post(
         `/driver/cancel-pickup`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formData
       );
       set({ isLoadingCancelPickUp: false });
       return response;
     } catch (error) {
-      console.error("Error starting pick up:", error);
-      console.log("Error response data:", error.response?.data);
-      console.log("Error message:", error.message);
-      console.log("Error status:", error.response?.status);
-
       // Store the most descriptive error message
       const errorMessage = error.response?.data?.message || error.message;
       set({ cancelPickUpError: errorMessage, isLoadingPickUp: false });
@@ -160,7 +150,7 @@ const useOrderStore = create((set) => ({
       set({ isLoadingConfirmDelivery: true, confirmDeliveryError: null });
       const response = await axiosClient.post(
         `/driver/confirm-delivered`,
-         formData,
+        formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -170,7 +160,10 @@ const useOrderStore = create((set) => ({
       set({ isLoadingConfirmDelivery: false });
       return response;
     } catch (error) {
-      console.error("Error confirming delivery:", error.response?.data?.message);
+      console.error(
+        "Error confirming delivery:",
+        error.response?.data?.message
+      );
       set({
         confirmDeliveryError: error.response?.data?.message,
         isLoadingConfirmDelivery: false,
@@ -180,16 +173,17 @@ const useOrderStore = create((set) => ({
 
   isLoadingCancelDelivery: false,
   cancelDeliveryError: null,
-  cancelDelivery: async (orderId, reason) => {
+  cancelDelivery: async (formData) => {
     try {
       set({ isLoadingCancelDelivery: true, cancelDeliveryError: null });
       const response = await axiosClient.post(
-        `/driver/cancel-delivery?orderId=${orderId}&reason=${reason}`
+        `/driver/cancel-delivery`,
+        formData
       );
       set({ isLoadingCancelDelivery: false });
-      return response.data;
+      return response;
     } catch (error) {
-      console.error("Error confirming delivery:", error);
+      console.error("Error delivery delivery:", error.response);
       set({
         cancelDeliveryError: error.message,
         isLoadingCancelDelivery: false,
@@ -270,5 +264,21 @@ const useOrderStore = create((set) => ({
     }
   },
 
+  cancelPickupNoshow: async (orderId) => {
+    try {
+      set({ isLoadingCancelNoshow: true, cancelNoshowError: null });
+      const response = await axiosClient.post(
+        `/driver/${orderId}/pickup/cancel/noshow`
+      );
+      set({ isLoadingCancelNoshow: false });
+      return response;
+    } catch (error) {
+      console.error("Error confirming pick up:", error);
+      set({
+        cancelNoshowError: error.response.data.message,
+        isLoadingCancelNoshow: false,
+      });
+    }
+  },
 }));
 export default useOrderStore;

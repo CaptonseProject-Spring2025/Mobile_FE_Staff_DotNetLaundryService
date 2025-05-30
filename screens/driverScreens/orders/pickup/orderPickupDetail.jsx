@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Linking,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import MapboxGL from "@rnmapbox/maps";
@@ -46,6 +47,9 @@ const OrderPickupDetail = ({ navigation, route }) => {
     confirmPickUp,
     isLoadingConfirmPickUp,
     confirmPickUpError,
+    cancelPickupNoshow,
+    isLoadingCancelNoshow,
+    cancelNoshowError,
   } = useOrderStore();
 
   const { userDetail } = useAuthStore();
@@ -149,14 +153,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
           { text: "OK" },
         ]);
       }
-      // Validate image requirement
-      if (!images || images.length === 0) {
-        return Alert.alert(
-          "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
-          [{ text: "OK" }]
-        );
-      }
 
       // Validate reason
       if (!cancelReason || cancelReason.trim() === "") {
@@ -168,32 +164,20 @@ const OrderPickupDetail = ({ navigation, route }) => {
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
-      formData.append("reason", cancelReason);
+      formData.append("cancelReason", cancelReason);
 
-      // Append image with proper structure for FormData
-      const imageUri = images[0];
-      const imageName = imageUri.split("/").pop();
-      const imageType =
-        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
-
-      formData.append("image", {
-        uri: imageUri,
-        name: imageName,
-        type: imageType,
-      });
       // Send the request
-      await cancelPickUp(formData);
-
-      // Close modal and show success toast
-      setCancelModalVisible(false);
-      setCancelReason("");
-      setImages([]);
-
-      Toast.show({
-        type: "success",
-        text1: "Đã hủy xác nhận lấy hàng.",
-      });
-      navigation.goBack();
+      const response = await cancelPickUp(formData);
+      if (response && response.status === 200) {
+        // Close modal and show success toast
+        setCancelModalVisible(false);
+        setCancelReason("");
+        Toast.show({
+          type: "success",
+          text1: "Đã hủy xác nhận lấy hàng.",
+        });
+        navigation.goBack();
+      }
     } catch (error) {
       console.log("Cancel pick up error:", error);
       Alert.alert(
@@ -318,6 +302,46 @@ const OrderPickupDetail = ({ navigation, route }) => {
     }
   };
 
+  const handleCall = () => {
+    let phoneNumber = assignmentDetail.phonenumber;
+    if (Platform.OS === "android") {
+      phoneNumber = `tel:${phoneNumber}`;
+    } else {
+      phoneNumber = `telprompt:${phoneNumber}`;
+    }
+    Linking.openURL(phoneNumber).catch((err) =>
+      console.error("Error opening dialer:", err)
+    );
+  };
+
+  const handleCancelNoshow = async () => {
+    try {
+      if (!assignmentDetail || !assignmentDetail.orderId) {
+        Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng");
+        return;
+      }
+
+      const response = await cancelPickupNoshow(assignmentDetail.orderId);
+
+      if (response && response.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã đánh dấu khách hàng không có mặt",
+        });
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error("Error when marking customer as not present:", error);
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message ||
+          cancelNoshowError ||
+          "Đã xảy ra lỗi khi xử lý yêu cầu"
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Loading overlay  */}
@@ -356,57 +380,7 @@ const OrderPickupDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <View className="flex-row justify-between gap-x-8">
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={handleTakePhoto}
-              >
-                <Ionicons name="camera" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={pickImage}
-              >
-                <Ionicons name="image" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.imagePreviewContainer}>
-              {images.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.imagesScrollContainer}
-                >
-                  {images.map((imageUri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.imagePreview}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          const newImages = [...images];
-                          newImages.splice(index, 1);
-                          setImages(newImages);
-                        }}
-                      >
-                        <Ionicons name="close-circle" size={24} color="red" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View className="items-center justify-center">
-                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
-                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.modalButtonContainer}>
+            <View style={{ ...styles.modalButtonContainer, marginTop: 10 }}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
                 onPress={() => {
@@ -651,7 +625,9 @@ const OrderPickupDetail = ({ navigation, route }) => {
               </Text>
             </View>
             <View style={styles.userInfoRow}>
-              <Ionicons name="call-outline" size={20} color="#02A257" />
+              <TouchableOpacity onPress={handleCall}>
+                <Ionicons name="call-outline" size={20} color="#02A257" />
+              </TouchableOpacity>
               <Text style={styles.userInfoLabel}>Số điện thoại:</Text>
               <Text style={styles.userInfoValue}>
                 {assignmentDetail?.phonenumber || "Chưa có thông tin"}
@@ -782,35 +758,63 @@ const OrderPickupDetail = ({ navigation, route }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[
-            styles.button,
-            styles.cancelButton,
-            isLoadingCancelPickUp && { backgroundColor: "#6c757d" },
+            styles.buttonNoShow,
+            isLoadingCancelNoshow && {
+              backgroundColor: "#e9ecef",
+              borderColor: "#ced4da",
+            },
+           
           ]}
-          onPress={() => setCancelModalVisible(true)}
-          disabled={isLoadingCancelPickUp}
+          onPress={() => {
+            Alert.alert("Xác nhận", "Bạn có muốn tiếp tục không?", [
+              { text: "Huỷ", style: "cancel" },
+              { text: "Xác nhận", onPress: handleCancelNoshow },
+            ]);
+          }}
+          disabled={isLoadingCancelNoshow}
         >
-          {isLoadingCancelPickUp ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+          {isLoadingCancelNoshow ? (
+            <ActivityIndicator size="small" color="#6c757d" />
           ) : (
-            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+            <Text style={[styles.noShowButtonText, { color: "#6c757d" }]}>
+              Khách không có mặt
+            </Text>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.completeButton,
-            isLoadingConfirmPickUp && { backgroundColor: "#6c757d" },
-          ]}
-          onPress={() => setCompleteModalVisible(true)}
-          disabled={isLoadingConfirmPickUp}
-        >
-          {isLoadingConfirmPickUp ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.bottomButtonRow}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.cancelButton,
+              isLoadingCancelPickUp && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={() => setCancelModalVisible(true)}
+            disabled={isLoadingCancelPickUp}
+          >
+            {isLoadingCancelPickUp ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.cancelButtonText}>Hủy đơn</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.completeButton,
+              isLoadingConfirmPickUp && { backgroundColor: "#6c757d" },
+            ]}
+            onPress={() => setCompleteModalVisible(true)}
+            disabled={isLoadingConfirmPickUp}
+          >
+            {isLoadingConfirmPickUp ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.completeButtonText}>Hoàn thành đơn</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -889,11 +893,31 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: "#fff",
+    gap: 10,
+  },
+  bottomButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  buttonNoShow: {
+    backgroundColor: "#fff0f0",
+    borderWidth: 1,
+    borderColor: "#ffcccc",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  noShowButtonText: {
+    color: "#d9534f",
+    fontWeight: "600",
+    fontSize: 16,
   },
   button: {
     paddingVertical: 12,

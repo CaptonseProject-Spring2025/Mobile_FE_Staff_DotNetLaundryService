@@ -51,16 +51,12 @@ const DeliveryList = ({ searchQuery = "" }) => {
       setFilteredOrders(
         assignmentList.filter(
           (order) =>
-            (order.status === "ASSIGNED_DELIVERY" &&
-              (order.currentStatus === "SCHEDULED_DELIVERY" ||
-                order.currentStatus === "DELIVERING")) &&
-            (order.orderId
-              .toLowerCase()
-              .includes(lowerCaseSearchQuery) || // Search by orderId
-              order.fullname
-                .toLowerCase()
-                .includes(lowerCaseSearchQuery) || 
-              order.phonenumber.includes(searchQuery)) 
+            order.status === "ASSIGNED_DELIVERY" &&
+            (order.currentStatus === "SCHEDULED_DELIVERY" ||
+              order.currentStatus === "DELIVERING") &&
+            (order.orderId.toLowerCase().includes(lowerCaseSearchQuery) || // Search by orderId
+              order.fullname.toLowerCase().includes(lowerCaseSearchQuery) ||
+              order.phonenumber.includes(searchQuery))
         )
       );
     }
@@ -92,15 +88,6 @@ const DeliveryList = ({ searchQuery = "" }) => {
         );
       }
 
-      // Validate image requirement
-      if (!images || images.length === 0) {
-        return Alert.alert(
-          "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
-          [{ text: "OK" }]
-        );
-      }
-
       // Validate reason
       if (!cancelReason || cancelReason.trim() === "") {
         return Alert.alert("Thiếu thông tin", "Vui lòng nhập lý do huỷ đơn", [
@@ -111,40 +98,27 @@ const DeliveryList = ({ searchQuery = "" }) => {
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", currentOrderId);
-      formData.append("reason", cancelReason);
-
-      // Append image with proper structure for FormData
-      const imageUri = images[0];
-      const imageName = imageUri.split("/").pop();
-      const imageType =
-        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
-
-      formData.append("image", {
-        uri: imageUri,
-        name: imageName,
-        type: imageType,
-      });
+      formData.append("cancelReason", cancelReason);
 
       // Send the request
-      await cancelDelivery(formData); // Corrected function call
+      const response = await cancelDelivery(formData); // Corrected function call
+      if (response && response.status === 200) {
+        // Close modal and show success toast
+        setCancelModalVisible(false);
+        setCancelReason("");
+        Toast.show({
+          type: "success",
+          text1: "Đã hủy xác nhận lấy hàng.",
+        });
 
-      // Close modal and show success toast
-      setCancelModalVisible(false);
-      setCancelReason("");
-      setImages([]);
-
-      Toast.show({
-        type: "success",
-        text1: "Đã hủy xác nhận lấy hàng.",
-      });
-
-      // Refresh list
-      fetchAssignmentList();
+        // Refresh list
+        fetchAssignmentList();
+      }
     } catch (error) {
-      console.log("Cancel delivery error:", error); // Changed log message
+      console.log("Cancel delivery error:", error.reponse.data.message); // Changed log message
       Alert.alert(
         "Lỗi",
-        error.message || "Đã xảy ra lỗi khi hủy giao hàng.", // Corrected error message context
+        error.reponse.data.message || "Đã xảy ra lỗi khi hủy giao hàng.", // Corrected error message context
         [{ text: "OK" }]
       );
     }
@@ -170,57 +144,6 @@ const DeliveryList = ({ searchQuery = "" }) => {
 
       // Show the error in an alert
       Alert.alert("Lỗi", errorMessage, [{ text: "OK" }]);
-    }
-  };
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      allowsMultipleSelection: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      if (result.assets && result.assets.length > 0) {
-        const newImageUris = result.assets.map((asset) => asset.uri);
-        setImages([...images, ...newImageUris]);
-      } else if (result.uri) {
-        setImages([...images, result.uri]);
-      }
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    console.log("Trạng thái quyền camera:", status);
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Quyền truy cập bị từ chối",
-        "Bạn cần cấp quyền truy cập camera."
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    console.log("Kết quả từ camera:", result);
-
-    if (result.canceled) {
-      console.log("Người dùng đã hủy chụp ảnh.");
-      return;
-    }
-
-    if (result.assets && result.assets.length > 0) {
-      const newImageUris = result.assets.map((asset) => asset.uri);
-      setImages([...images, ...newImageUris]);
-    } else if (result.uri) {
-      setImages([...images, result.uri]);
     }
   };
 
@@ -378,8 +301,17 @@ const DeliveryList = ({ searchQuery = "" }) => {
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
-          <Text style={{ fontSize: 18, color: '#666' }}>Không tìm thấy đơn hàng.</Text>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop: 50,
+          }}
+        >
+          <Text style={{ fontSize: 18, color: "#666" }}>
+            Không tìm thấy đơn hàng.
+          </Text>
         </View>
       )}
       {/* Cancel Reason Modal */}
@@ -404,56 +336,6 @@ const DeliveryList = ({ searchQuery = "" }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <View className="flex-row justify-between gap-x-8">
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={handleTakePhoto}
-              >
-                <Ionicons name="camera" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={pickImage}
-              >
-                <Ionicons name="image" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.imagePreviewContainer}>
-              {images.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.imagesScrollContainer}
-                >
-                  {images.map((imageUri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.imagePreview}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          const newImages = [...images];
-                          newImages.splice(index, 1);
-                          setImages(newImages);
-                        }}
-                      >
-                        <Ionicons name="close-circle" size={24} color="red" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View className="items-center justify-center">
-                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
-                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
-                </View>
-              )}
-            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
@@ -471,7 +353,6 @@ const DeliveryList = ({ searchQuery = "" }) => {
                   handleCancelDelivery();
                   setCancelModalVisible(false);
                   setCancelReason("");
-                  setImages([]);
                 }}
               >
                 <Text style={styles.buttonConfirmText}>Xác nhận</Text>
@@ -594,7 +475,7 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 40,
+    maxHeighth: 100,
     borderWidth: 1,
     borderColor: "#ddd",
     padding: 10,
@@ -621,6 +502,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
+    marginTop: 20,
   },
   modalButton: {
     borderRadius: 20,

@@ -151,7 +151,8 @@ const AddressNavigateMap = () => {
         try {
           const subscription = await Location.watchPositionAsync(
             {
-              accuracy: Location.Accuracy.Balanced,
+              accuracy: Location.Accuracy.High,
+              timeInterval: 5000, // Update every 5 seconds
               distanceInterval: 30, // Update every 10 meters
             },
             (location) => {
@@ -167,6 +168,7 @@ const AddressNavigateMap = () => {
 
               // send live location over SignalR
               if (orderId) {
+                console.log("Sending live location:", newLocation);
                 trackingService.sendLocation(
                   location.coords.latitude,
                   location.coords.longitude
@@ -258,7 +260,7 @@ const AddressNavigateMap = () => {
           followUserMode: MapboxGL.UserTrackingModes.FollowWithCourse,
           followPitch: 60,
           pitch: 60,
-          zoomLevel: 17,
+          zoomLevel: 18,
           animationDuration: 1000,
         });
 

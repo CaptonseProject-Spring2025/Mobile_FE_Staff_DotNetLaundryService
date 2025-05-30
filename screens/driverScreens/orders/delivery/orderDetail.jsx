@@ -155,7 +155,7 @@ const OrderDetail = ({ navigation, route }) => {
   useEffect(() => {
     if (route.params?.paymentSuccess) {
       setPaymentSuccess(true);
-      setSelectedPayment("transfer"); // Set payment method to transfer on success
+      setSelectedPayment("transfer");
     }
   }, [route.params?.paymentSuccess]);
 
@@ -257,15 +257,6 @@ const OrderDetail = ({ navigation, route }) => {
         ]);
       }
 
-      // Validate image requirement
-      if (!images || images.length === 0) {
-        return Alert.alert(
-          "Thiếu thông tin",
-          "Vui lòng gửi ít nhất một ảnh chứng minh lý do huỷ đơn",
-          [{ text: "OK" }]
-        );
-      }
-
       // Validate reason
       if (!cancelReason || cancelReason.trim() === "") {
         return Alert.alert("Thiếu thông tin", "Vui lòng nhập lý do huỷ đơn", [
@@ -276,43 +267,27 @@ const OrderDetail = ({ navigation, route }) => {
       // Create form data with proper structure
       const formData = new FormData();
       formData.append("orderId", assignmentDetail.orderId);
-      formData.append("reason", cancelReason);
-
-      // Append image with proper structure for FormData
-      const imageUri = images[0];
-      const imageName = imageUri.split("/").pop();
-      const imageType =
-        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
-
-      formData.append("image", {
-        uri: imageUri,
-        name: imageName,
-        type: imageType,
-      });
+      formData.append("cancelReason", cancelReason);
 
       // Close modal BEFORE sending the request
       setCancelModalVisible(false);
 
       // Send the request
-      await cancelDelivery(formData);
-
-      // Reset form state
-      setCancelReason("");
-      setImages([]);
-
-      // Show success toast with correct message
-      Toast.show({
-        type: "success",
-        text1: "Đã hủy giao hàng thành công.",
-      });
-
-      // Navigate back
-      navigation.goBack();
+      const reponse = await cancelDelivery(formData);
+      if (reponse && reponse.status === 200) {
+        // Reset form state
+        setCancelReason("");
+        // Show success toast with correct message
+        Toast.show({
+          type: "success",
+          text1: "Đã hủy giao hàng thành công.",
+        });
+        // Navigate back
+        navigation.goBack();
+      }
     } catch (error) {
       console.log("Cancel delivery error:", error);
-
-      // Fixed error message - removed undefined variable
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi hủy giao hàng.", [{ text: "OK" }]);
+      Alert.alert("Lỗi", error.reponse.data.message, [{ text: "OK" }]);
     }
   };
 
@@ -370,56 +345,6 @@ const OrderDetail = ({ navigation, route }) => {
         [{ text: "OK" }]
       );
       console.error("Error confirming pick up:", error.response.data.message);
-    }
-  };
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      allowsMultipleSelection: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      if (result.assets && result.assets.length > 0) {
-        const newImageUris = result.assets.map((asset) => asset.uri);
-        setImages([...images, ...newImageUris]);
-      } else if (result.uri) {
-        setImages([...images, result.uri]);
-      }
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    console.log("Trạng thái quyền camera:", status);
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Quyền truy cập bị từ chối",
-        "Bạn cần cấp quyền truy cập camera."
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    console.log("Kết quả từ camera:", result);
-
-    if (result.canceled) {
-      console.log("Người dùng đã hủy chụp ảnh.");
-      return;
-    }
-
-    if (result.assets && result.assets.length > 0) {
-      const newImageUris = result.assets.map((asset) => asset.uri);
-      setImages([...images, ...newImageUris]);
-    } else if (result.uri) {
-      setImages([...images, result.uri]);
     }
   };
 
@@ -533,56 +458,6 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <View className="flex-row justify-between gap-x-8">
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={handleTakePhoto}
-              >
-                <Ionicons name="camera" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={pickImage}
-              >
-                <Ionicons name="image" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.imagePreviewContainer}>
-              {images.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.imagesScrollContainer}
-                >
-                  {images.map((imageUri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.imagePreview}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          const newImages = [...images];
-                          newImages.splice(index, 1);
-                          setImages(newImages);
-                        }}
-                      >
-                        <Ionicons name="close-circle" size={24} color="red" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View className="items-center justify-center">
-                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
-                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
-                </View>
-              )}
-            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
@@ -626,56 +501,6 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
-            <View className="flex-row justify-between gap-x-8">
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={handleTakePhoto}
-              >
-                <Ionicons name="camera" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={pickImage}
-              >
-                <Ionicons name="image" size={24} color="#63B35C" />
-                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.imagePreviewContainer}>
-              {images.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.imagesScrollContainer}
-                >
-                  {images.map((imageUri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.imagePreview}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          const newImages = [...images];
-                          newImages.splice(index, 1);
-                          setImages(newImages);
-                        }}
-                      >
-                        <Ionicons name="close-circle" size={24} color="red" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View className="items-center justify-center">
-                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
-                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
-                </View>
-              )}
-            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}
@@ -990,14 +815,10 @@ const OrderDetail = ({ navigation, route }) => {
             paymentSuccess && { opacity: 0.5 },
           ]}
           onPress={() => {
-            Alert.alert(
-              "Xác nhận",
-              "Bạn có muốn tiếp tục không?",
-              [
-                { text: "Huỷ", style: "cancel" },
-                { text: "Xác nhận", onPress: handleCancelNoshow },
-              ]
-            );
+            Alert.alert("Xác nhận", "Bạn có muốn tiếp tục không?", [
+              { text: "Huỷ", style: "cancel" },
+              { text: "Xác nhận", onPress: handleCancelNoshow },
+            ]);
           }}
           disabled={isLoadingCancelNoshow || paymentSuccess}
         >
@@ -1322,6 +1143,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
+    marginTop: 20,
   },
   modalButton: {
     borderRadius: 20,
