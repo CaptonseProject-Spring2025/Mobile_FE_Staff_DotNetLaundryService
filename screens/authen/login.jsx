@@ -26,7 +26,7 @@ export default function LoginScreen({ navigation }) {
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login, message } = useAuthStore();
-  const { saveToken, deleteToken } = useNotificationStore();
+  const { saveToken } = useNotificationStore();
 
   const validatePhone = () => {
     if (!phoneNumber) {
@@ -88,24 +88,12 @@ export default function LoginScreen({ navigation }) {
           result?.data?.message || "Sai thông tin đăng nhập. Vui lòng thử lại."
         );
       }
-      const userRole = useAuthStore.getState().userDetail?.role;
+      //if role is valid, proceed with saving token
       if (result && result.success) {
         await saveToken(result.userId);
       }
-
-      if (userRole === "Customer" || userRole === "Admin") {
-        // User has an invalid role for this app
-        await deleteToken(result.userId);
-        const logout = useAuthStore.getState().logout;
-        await logout(); // Log them out immediately
-        Alert.alert(
-          "Lỗi Đăng Nhập",
-          "Bạn không có quyền đăng nhập vào ứng dụng này."
-        );
-      }
     } catch (error) {
-      // Catch errors specifically from the login API call
-      console.error("Login API error:", error);
+      console.error("Login API error:", error.reponse.data.message);
       setLoginError(
         "Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại."
       );
@@ -124,8 +112,8 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 300 : 0}
+      behavior="padding"
+      keyboardVerticalOffset={100}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContainer}

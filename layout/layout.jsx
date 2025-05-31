@@ -11,6 +11,7 @@ import useAuthStore from "../api/store/authStore";
 import PayosWebView from "../screens/driverScreens/orders/payment/payosWebView.jsx";
 import messaging from "@react-native-firebase/messaging";
 import { Alert, Platform } from "react-native";
+import useNotificationStore from "../api/store/notificationStore.js";
 
 const Stack = createNativeStackNavigator();
 
@@ -20,7 +21,7 @@ const Layout = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkTokenValidity = useAuthStore((state) => state.checkTokenValidity);
   const userDetail = useAuthStore((state) => state.userDetail);
-
+  const { deleteToken } = useNotificationStore();
   // Request location permissions
   const requestLocationPermission = async () => {
     try {
@@ -85,10 +86,39 @@ const Layout = () => {
       return false;
     }
   };
+
+  const hasValidRole = () => {
+    if (!isAuthenticated || !userDetail) return false;
+    return userDetail.role === "Staff" || userDetail.role === "Driver";
+  };
+
+  //check if user has valid role after authentication
+  useEffect(() => {
+    // Check for invalid roles after authentication
+    if (isAuthenticated && userDetail && !hasValidRole()) {
+      Alert.alert(
+        "Không có quyền truy cập",
+        "Bạn không có quyền truy cập ứng dụng này. Ứng dụng này chỉ dành cho nhân viên và tài xế.",
+        [
+          {
+            text: "Ok",
+            onPress: async () => {
+              if (userDetail.userId) {
+                await deleteToken(userDetail.userId);
+              }
+              const logout = useAuthStore.getState().logout;
+              await logout();
+            },
+          },
+        ]
+      );
+    }
+  }, [isAuthenticated, userDetail]);
+
   useEffect(() => {
     let delayTimerId;
     let loadingTimerId;
-    
+
     // Initialize auth state with better error handling
     const initApp = async () => {
       try {
@@ -117,7 +147,7 @@ const Layout = () => {
     };
 
     initApp();
-    
+
     // Clean up all timers on unmount
     return () => {
       if (delayTimerId) clearTimeout(delayTimerId);
@@ -150,7 +180,7 @@ const Layout = () => {
   return (
     <>
       <Stack.Navigator>
-        {isAuthenticated ? (
+        {isAuthenticated && hasValidRole() ? (
           userDetail?.role === "Staff" ? (
             <Stack.Screen
               name="StaffHome"
@@ -174,7 +204,7 @@ const Layout = () => {
             </>
           )
         ) : (
-          // Show authentication flow when not authenticated
+          // Show authentication flow when not authenticated or invalid role
           <Stack.Screen
             name="Authentication"
             component={Authen}
