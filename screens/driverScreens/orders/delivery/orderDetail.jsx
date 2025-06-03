@@ -395,6 +395,55 @@ const OrderDetail = ({ navigation, route }) => {
     );
   };
 
+   const pickImage = async () => {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        quality: 0.7,
+      });
+  
+      if (!result.canceled) {
+        if (result.assets && result.assets.length > 0) {
+          const newImageUris = result.assets.map((asset) => asset.uri);
+          setImages([...images, ...newImageUris]);
+        } else if (result.uri) {
+          setImages([...images, result.uri]);
+        }
+      }
+    };
+  
+    const handleTakePhoto = async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  
+      if (status !== "granted") {
+        Alert.alert(
+          "Quyền truy cập bị từ chối",
+          "Bạn cần cấp quyền truy cập camera."
+        );
+        return;
+      }
+  
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 1,
+      });
+  
+      if (result.canceled) {
+        console.log("Người dùng đã hủy chụp ảnh.");
+        return;
+      }
+  
+      if (result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
+      } else if (result.uri) {
+        setImages([...images, result.uri]);
+      }
+    };
+  
+    
   const handleCancelNoshow = async () => {
     try {
       if (!assignmentDetail || !assignmentDetail.orderId) {
@@ -501,6 +550,56 @@ const OrderDetail = ({ navigation, route }) => {
               numberOfLines={4}
               mode="outlined"
             />
+            <View className="flex-row justify-between gap-x-8">
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View className="items-center justify-center">
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-500 mt-2">Chưa có hình ảnh</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.buttonCancel]}

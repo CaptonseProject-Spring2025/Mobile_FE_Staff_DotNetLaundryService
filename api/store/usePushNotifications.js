@@ -43,7 +43,6 @@ export default function usePushNotifications() {
     // Set up foreground message handler
     const unsubscribeForeground = messaging().onMessage(
       async (remoteMessage) => {
-        console.log("Foreground notification received:", remoteMessage);
 
         // Extract notification data
         const { notification, data } = remoteMessage;

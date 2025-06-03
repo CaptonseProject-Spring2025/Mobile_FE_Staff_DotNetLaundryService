@@ -58,7 +58,6 @@ const AddressDeliveryNavigateMap = () => {
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [lastFetchedLocation, setLastFetchedLocation] = useState(null);
   const [isFetchingRoute, setIsFetchingRoute] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
@@ -143,66 +142,6 @@ const AddressDeliveryNavigateMap = () => {
       if (zoomTimerId) clearTimeout(zoomTimerId);
     };
   }, [userData]);
-  // Create a location tracking effect that updates more frequently
-  useEffect(() => {
-    let zoomTimerId;
-
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionStatus(status);
-
-      if (status === "granted") {
-        try {
-          const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Highest,
-          });
-
-          setDriverLocation({
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
-          });
-
-          // Set user location from data passed in route params
-          if (
-            userData &&
-            userData.deliveryLatitude &&
-            userData.deliveryLongitude
-          ) {
-            setUserLocation({
-              latitude: userData.deliveryLatitude,
-              longitude: userData.deliveryLongitude,
-            });
-          }
-
-          // Initial zoom to driver location
-          zoomTimerId = setTimeout(() => {
-            if (cameraRef.current) {
-              cameraRef.current.setCamera({
-                centerCoordinate: [
-                  currentLocation.coords.longitude,
-                  currentLocation.coords.latitude,
-                ],
-                zoomLevel: 15,
-                animationDuration: 1000,
-              });
-            }
-          }, 1000);
-        } catch (error) {
-          console.error("Error getting location:", error);
-          // Fallback to default driver location
-          setDriverLocation({
-            latitude: 10.78535,
-            longitude: 106.61849,
-          });
-        }
-      }
-    })();
-
-    // Cleanup function to clear the timeout when component unmounts
-    return () => {
-      if (zoomTimerId) clearTimeout(zoomTimerId);
-    };
-  }, [userData]);
 
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
@@ -214,9 +153,9 @@ const AddressDeliveryNavigateMap = () => {
         try {
           const subscription = await Location.watchPositionAsync(
             {
-              accuracy: Location.Accuracy.High,
+              accuracy: Location.Accuracy.Highest,
               timeInterval: 5000, // Update every 5 seconds
-              distanceInterval: 30, // Update every 10 meters
+              distanceInterval: 30, // Update every 30 meters
             },
             (location) => {
               if (!isMounted) return;
@@ -225,16 +164,24 @@ const AddressDeliveryNavigateMap = () => {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
               };
+
               setCurrentDriverLocation(newLocation);
               setCurrentLocation(newLocation);
 
               // send live location over SignalR
               if (orderId) {
+                console.log("Sending live location:", newLocation);
                 trackingService.sendLocation(
                   location.coords.latitude,
                   location.coords.longitude
                 );
               }
+
+              // Update driver location state
+              setDriverLocation(newLocation);
+
+              // //Trigger line update
+              setLineUpdateKey((prev) => prev + 1);
             }
           );
 
@@ -253,7 +200,8 @@ const AddressDeliveryNavigateMap = () => {
         locationSubscription.remove();
       }
     };
-  }, [permissionStatus, orderId, driverLocation]);
+  }, [permissionStatus, orderId]);
+
   // Force regular updates of the direct line but less frequently
   useEffect(() => {
     let isMounted = true;
@@ -262,7 +210,7 @@ const AddressDeliveryNavigateMap = () => {
       if (isMounted) {
         setForceUpdate((prev) => prev + 1);
       }
-    }, 1000);
+    }, 5000);
 
     return () => {
       isMounted = false;
@@ -276,94 +224,31 @@ const AddressDeliveryNavigateMap = () => {
       setLineUpdateKey((prev) => prev + 1);
     }
   }, [forceUpdate, currentDriverLocation, userLocation]);
+
   // Get route when either location changes significantly
   useEffect(() => {
     let isMounted = true;
 
     const fetchRoute = async () => {
       if (driverLocation && userLocation && !isFetchingRoute) {
-        // Check if we need to fetch a new route
         if (isMounted) {
-          //Add debounce to avoid too frequent requests
-          clearTimeout(fetchRoute);
-          fetchRoute = setTimeout(() => {
-            fetchDirectionsRoute();
-          }, 1000);
+          fetchDirectionsRoute();
         }
       }
     };
+
     fetchRoute();
 
     return () => {
       isMounted = false;
-      clearTimeout(fetchTime);
     };
   }, [driverLocation, userLocation]);
-  //follow driver
-  useEffect(() => {
-    let cameraAnimationId = null;
-
-    if (isDrivingView && cameraRef.current) {
-      // Set camera to follow user with heading when in driving mode
-      try {
-        const animation = cameraRef.current.setCamera({
-          followUserLocation: true,
-          followUserMode: MapboxGL.UserTrackingModes.FollowWithCourse,
-          followPitch: 60,
-          pitch: 60,
-          zoomLevel: 17,
-          animationDuration: 1000,
-        });
-
-        // Store animation reference if available
-        if (animation && animation.requestId) {
-          cameraAnimationId = animation.requestId;
-        }
-      } catch (error) {
-        console.error("Error setting camera in driving view:", error);
-      }
-    } else if (!isDrivingView && cameraRef.current && driverLocation) {
-      // Reset camera when exiting driving mode
-      try {
-        const animation = cameraRef.current.setCamera({
-          centerCoordinate: [driverLocation.longitude, driverLocation.latitude],
-          followUserLocation: false,
-          followUserMode: MapboxGL.UserTrackingModes.None,
-          zoomLevel: 12,
-          pitch: 0,
-          animationDuration: 1000,
-        });
-
-        // Store animation reference if available
-        if (animation && animation.requestId) {
-          cameraAnimationId = animation.requestId;
-        }
-      } catch (error) {
-        console.error("Error resetting camera:", error);
-      }
-    }
-
-    // Clean up animations
-    return () => {
-      if (cameraAnimationId && cameraRef.current) {
-        try {
-          // Cancel any ongoing camera animations if supported by the API
-          if (cameraRef.current.cancelCameraAnimation) {
-            cameraRef.current.cancelCameraAnimation(cameraAnimationId);
-          }
-        } catch (error) {
-          console.log("Error cleaning up camera animation:", error);
-        }
-      }
-    };
-  }, [isDrivingView, driverLocation]);
 
   const fetchDirectionsRoute = async () => {
     if (isFetchingRoute) return;
 
     try {
       setIsFetchingRoute(true);
-      setLastFetchedLocation(driverLocation);
 
       const response = await axios.get(
         `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
@@ -411,13 +296,9 @@ const AddressDeliveryNavigateMap = () => {
       longitude: location.coords.longitude,
     };
 
-    // Update driver current location
+    // Cập nhật vị trí hiện tại
     setCurrentDriverLocation(newLocation);
     setCurrentLocation(newLocation);
-
-    // update driver location and force update the line
-    setDriverLocation(newLocation);
-    setLineUpdateKey((prev) => prev + 1);
   };
 
   // Start navigation animation if in driving view automatically
@@ -444,7 +325,24 @@ const AddressDeliveryNavigateMap = () => {
     };
   }, [isDrivingView, routeCoordinates.length, duration, arrowPositionRef]);
 
-  // // Add this useEffect to handle zoom changes
+  // Clean up MapboxGL resources when component unmounts
+  useEffect(() => {
+    return () => {
+      // Stop any active camera animations
+      if (cameraRef.current) {
+        try {
+          // Reset camera settings to stop any animations
+          cameraRef.current.setCamera({
+            followUserLocation: false,
+            followUserMode: MapboxGL.UserTrackingModes.None,
+          });
+        } catch (error) {
+          console.log("Error cleaning up camera:", error);
+        }
+      }
+    };
+  }, []);
+
   if (permissionStatus === "denied") {
     return (
       <SafeAreaView style={styles.container}>
@@ -489,9 +387,14 @@ const AddressDeliveryNavigateMap = () => {
               }
               followPitch={isDrivingView ? 60 : 0}
               pitch={isDrivingView ? 60 : 0}
-              zoomLevel={isDrivingView ? 17 : 12}
+              zoomLevel={isDrivingView ? 18 : 14}
+              centerCoordinate={
+                !isDrivingView && driverLocation
+                  ? [driverLocation.longitude, driverLocation.latitude]
+                  : undefined
+              }
               animationMode="flyTo"
-              animationDuration={2000}
+              animationDuration={1000}
             />
 
             <MapboxGL.UserLocation
