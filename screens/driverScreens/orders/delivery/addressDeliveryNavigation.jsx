@@ -122,7 +122,7 @@ const AddressDeliveryNavigateMap = () => {
     }
   }, [orderId]);
 
-  // Create a location tracking effect that updates more frequently
+  // Create a location tracking effect
   useEffect(() => {
     let locationSubscription = null;
     let isMounted = true;
