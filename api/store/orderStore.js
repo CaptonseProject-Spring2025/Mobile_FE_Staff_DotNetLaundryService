@@ -254,7 +254,7 @@ const useOrderStore = create((set) => ({
         `/driver/${orderId}/delivery/cancel/noshow`
       );
       set({ isLoadingCancelNoshow: false });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error confirming delivery:", error);
       set({
@@ -277,6 +277,25 @@ const useOrderStore = create((set) => ({
       set({
         cancelNoshowError: error.response.data.message,
         isLoadingCancelNoshow: false,
+      });
+    }
+  },
+
+  noshowfee: {},
+  isLoaidngNoshow: false,
+  errorNoshow: null,
+  noshow: async (orderId) => {
+    try {
+      set({ isLoaidngNoshow: true, errorNoshow: null });
+      const response = await axiosClient.get(`/orders/no-show/${orderId}`);
+      set({ noshowfee: response.data, isLoaidngNoshow: false });
+      return response;
+    } catch (error) {
+      console.error("Error fetching no-show fee:", error);
+      set({
+        errorNoshow:
+          error.response.data.message || "Failed to fetch no-show fee",
+        isLoaidngNoshow: false,
       });
     }
   },

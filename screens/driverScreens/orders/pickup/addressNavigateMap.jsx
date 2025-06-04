@@ -135,7 +135,6 @@ const AddressNavigateMap = () => {
           const subscription = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Highest,
-              timeInterval: 5000, // Update every 5 seconds
               distanceInterval: 30, // Update every 30 meters
             },
             (location) => {

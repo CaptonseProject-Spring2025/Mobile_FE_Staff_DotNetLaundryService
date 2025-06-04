@@ -142,6 +142,8 @@ const OrderDetail = ({ navigation, route }) => {
     confirmDeliveryError,
     isLoadingCancelNoshow,
     cancelNoshow,
+    noshow,
+    noshowfee,
   } = useOrderStore();
   const { createPayment, isLoadingPayment } = usePaymentStore();
   const [paymentSuccess, setPaymentSuccess] = useState(
@@ -212,6 +214,20 @@ const OrderDetail = ({ navigation, route }) => {
     };
     fetchUserData();
   }, [assignmentDetail]);
+
+  useEffect(() => {
+    const fetchNoshowFee = async () => {
+      if (assignmentDetail?.orderId) {
+        try {
+          await noshow(assignmentDetail.orderId);
+        } catch (error) {
+          console.error("Error fetching noshow fee:", error);
+        }
+      }
+    };
+
+    fetchNoshowFee();
+  }, [assignmentDetail?.orderId]);
 
   const startConversation = async (receiverId) => {
     try {
@@ -395,55 +411,54 @@ const OrderDetail = ({ navigation, route }) => {
     );
   };
 
-   const pickImage = async () => {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        allowsMultipleSelection: true,
-        quality: 0.7,
-      });
-  
-      if (!result.canceled) {
-        if (result.assets && result.assets.length > 0) {
-          const newImageUris = result.assets.map((asset) => asset.uri);
-          setImages([...images, ...newImageUris]);
-        } else if (result.uri) {
-          setImages([...images, result.uri]);
-        }
-      }
-    };
-  
-    const handleTakePhoto = async () => {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  
-      if (status !== "granted") {
-        Alert.alert(
-          "Quyền truy cập bị từ chối",
-          "Bạn cần cấp quyền truy cập camera."
-        );
-        return;
-      }
-  
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 1,
-      });
-  
-      if (result.canceled) {
-        console.log("Người dùng đã hủy chụp ảnh.");
-        return;
-      }
-  
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
       if (result.assets && result.assets.length > 0) {
         const newImageUris = result.assets.map((asset) => asset.uri);
         setImages([...images, ...newImageUris]);
       } else if (result.uri) {
         setImages([...images, result.uri]);
       }
-    };
-  
-    
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
+    }
+  };
+
   const handleCancelNoshow = async () => {
     try {
       if (!assignmentDetail || !assignmentDetail.orderId) {
@@ -701,6 +716,45 @@ const OrderDetail = ({ navigation, route }) => {
               </Text>
             </View>
 
+            {/* No show fee */}
+            {noshowfee && noshowfee.total > 0 && (
+              <View style={styles.orderRow}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ fontSize: 16 }}>Phí không có mặt</Text>
+                  <TouchableOpacity
+                    style={{ marginLeft: 5 }}
+                    onPress={() => {
+                      Alert.alert(
+                        "Thông tin phí không có mặt",
+                        `${
+                          noshowfee.pickupFailCount > 0
+                            ? `• Phí không có mặt lúc lấy hàng (${
+                                noshowfee.pickupFailCount
+                              } lần): ${noshowfee.pickupFailFee.toLocaleString()}đ\n`
+                            : ""
+                        }${
+                          noshowfee.deliveryFailCount > 0
+                            ? `• Phí không có mặt lúc giao hàng (${
+                                noshowfee.deliveryFailCount
+                              } lần): ${noshowfee.deliveryFailFee.toLocaleString()}đ`
+                            : ""
+                        }\nTổng phí: ${noshowfee.total.toLocaleString()}đ`
+                      );
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={18}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ fontSize: 16 }}>
+                  {noshowfee.total.toLocaleString()}đ
+                </Text>
+              </View>
+            )}
+
             {/*additional fee */}
             <View style={styles.orderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -718,7 +772,11 @@ const OrderDetail = ({ navigation, route }) => {
                 <Text style={{ fontSize: 16 }}>Tổng</Text>
               </View>
               <Text style={{ fontSize: 16 }}>
-                {orderDetail?.orderSummary?.totalPrice?.toLocaleString()}đ
+                {(
+                  (orderDetail?.orderSummary?.totalPrice || 0) +
+                  (noshowfee?.total || 0)
+                ).toLocaleString()}
+                đ
               </Text>
             </View>
           </View>

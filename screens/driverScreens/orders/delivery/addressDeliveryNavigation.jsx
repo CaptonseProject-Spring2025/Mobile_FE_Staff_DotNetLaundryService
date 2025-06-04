@@ -59,11 +59,51 @@ const AddressDeliveryNavigateMap = () => {
   const [forceUpdate, setForceUpdate] = useState(0);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isFetchingRoute, setIsFetchingRoute] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
 
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
+  // Request permission and get current location
+  useEffect(() => {
+    let zoomTimerId;
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPermissionStatus(status);
+
+      if (status === "granted") {
+        try {
+          const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+          });
+
+          setDriverLocation({
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+          });
+
+          // Set user location from data passed in route params
+          if (userData && userData.deliveryLatitude && userData.deliveryLongitude) {
+            setUserLocation({
+              latitude: userData.deliveryLatitude,
+              longitude: userData.deliveryLongitude,
+            });
+          }
+        } catch (error) {
+          console.error("Error getting location:", error);
+          // Fallback to default driver location
+          setDriverLocation({
+            latitude: 10.78535,
+            longitude: 106.61849,
+          });
+        }
+      }
+    })();
+
+    // Cleanup function to clear the timeout when component unmounts
+    return () => {};
+  }, [userData]);
+
   // start SignalR connection when mounting
   useEffect(() => {
     if (orderId) {
@@ -82,67 +122,6 @@ const AddressDeliveryNavigateMap = () => {
     }
   }, [orderId]);
 
-  // Request permission and get current location
-  useEffect(() => {
-    let zoomTimerId; // Added to track timeout ID for cleanup
-
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionStatus(status);
-
-      if (status === "granted") {
-        try {
-          const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-
-          setDriverLocation({
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
-          });
-
-          // Set user location from data passed in route params
-          if (
-            userData &&
-            userData.deliveryLatitude &&
-            userData.deliveryLongitude
-          ) {
-            setUserLocation({
-              latitude: userData.deliveryLatitude,
-              longitude: userData.deliveryLongitude,
-            });
-          }
-
-          // Initial zoom to driver location
-          zoomTimerId = setTimeout(() => {
-            if (cameraRef.current) {
-              cameraRef.current.setCamera({
-                centerCoordinate: [
-                  currentLocation.coords.longitude,
-                  currentLocation.coords.latitude,
-                ],
-                zoomLevel: 15,
-                animationDuration: 1000,
-              });
-            }
-          }, 1000);
-        } catch (error) {
-          console.error("Error getting location:", error);
-          // Fallback to default driver location
-          setDriverLocation({
-            latitude: 10.78535,
-            longitude: 106.61849,
-          });
-        }
-      }
-    })();
-
-    // Cleanup function to clear the timeout when component unmounts
-    return () => {
-      if (zoomTimerId) clearTimeout(zoomTimerId);
-    };
-  }, [userData]);
-
   // Create a location tracking effect that updates more frequently
   useEffect(() => {
     let locationSubscription = null;
@@ -154,7 +133,6 @@ const AddressDeliveryNavigateMap = () => {
           const subscription = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Highest,
-              timeInterval: 5000, // Update every 5 seconds
               distanceInterval: 30, // Update every 30 meters
             },
             (location) => {
@@ -249,7 +227,6 @@ const AddressDeliveryNavigateMap = () => {
 
     try {
       setIsFetchingRoute(true);
-
       const response = await axios.get(
         `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${driverLocation.longitude},${driverLocation.latitude};${userLocation.longitude},${userLocation.latitude}`,
         {
@@ -287,6 +264,15 @@ const AddressDeliveryNavigateMap = () => {
       setIsFetchingRoute(false);
     }
   };
+  // Using a ref to keep track of the component's mount status
+  const isMounted = useRef(true);
+
+  // Set isMounted to false when component unmounts
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleLocationUpdate = (location) => {
     if (!location || !location.coords || !isMounted.current) return;
@@ -375,7 +361,6 @@ const AddressDeliveryNavigateMap = () => {
             logoEnabled={false}
             attributionEnabled={false}
             scaleBarEnabled={false}
-            onDidFinishRenderingMapFully={() => setMapReady(true)} // Ensure mapReady state is updated
           >
             <MapboxGL.Camera
               ref={cameraRef}

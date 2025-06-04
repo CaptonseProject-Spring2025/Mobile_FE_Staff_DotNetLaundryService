@@ -50,6 +50,9 @@ const OrderPickupDetail = ({ navigation, route }) => {
     cancelPickupNoshow,
     isLoadingCancelNoshow,
     cancelNoshowError,
+    noshow,
+    noshowfee,
+    isLoaidngNoshow,
   } = useOrderStore();
 
   const { userDetail } = useAuthStore();
@@ -110,6 +113,20 @@ const OrderPickupDetail = ({ navigation, route }) => {
     };
     fetchUserData();
   }, [assignmentDetail]);
+
+  useEffect(() => {
+    const fetchNoshowFee = async () => {
+      if (assignmentDetail?.orderId) {
+        try {
+          await noshow(assignmentDetail.orderId);
+        } catch (error) {
+          console.error("Error fetching noshow fee:", error);
+        }
+      }
+    };
+
+    fetchNoshowFee();
+  }, [assignmentDetail?.orderId]);
 
   const startConversation = async (receiverId) => {
     try {
@@ -578,6 +595,45 @@ const OrderPickupDetail = ({ navigation, route }) => {
               </Text>
             </View>
 
+            {/* Noshow Fee */}
+            {noshowfee && noshowfee.total > 0 && (
+              <View style={styles.orderRow}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ fontSize: 16 }}>Phí không có mặt</Text>
+                  <TouchableOpacity
+                    style={{ marginLeft: 5 }}
+                    onPress={() => {
+                      Alert.alert(
+                        "Thông tin phí không có mặt",
+                        `Nếu khách hàng không có mặt tại địa chỉ nhận hoặc trả hàng khi tài xế đến, hệ thống sẽ tính thêm phí ship.\n\n${
+                          noshowfee.pickupFailCount > 0
+                            ? `• Phí không có mặt lúc lấy hàng (${
+                                noshowfee.pickupFailCount
+                              } lần): ${noshowfee.pickupFailFee.toLocaleString()}đ\n`
+                            : ""
+                        }${
+                          noshowfee.deliveryFailCount > 0
+                            ? `• Phí không có mặt lúc giao hàng (${
+                                noshowfee.deliveryFailCount
+                              } lần): ${noshowfee.deliveryFailFee.toLocaleString()}đ`
+                            : ""
+                        }\n\nTổng phí: ${noshowfee.total.toLocaleString()}đ`
+                      );
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={18}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ fontSize: 16 }}>
+                  {noshowfee.total.toLocaleString()}đ
+                </Text>
+              </View>
+            )}
+
             {/*additional fee */}
             <View style={styles.orderRow}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -595,7 +651,11 @@ const OrderPickupDetail = ({ navigation, route }) => {
                 <Text style={{ fontSize: 16 }}>Tổng</Text>
               </View>
               <Text style={{ fontSize: 16 }}>
-                {orderDetail?.orderSummary?.totalPrice?.toLocaleString()}đ
+                {(
+                  (orderDetail?.orderSummary?.totalPrice || 0) +
+                  (noshowfee?.total || 0)
+                ).toLocaleString()}
+                đ
               </Text>
             </View>
           </View>
@@ -763,7 +823,6 @@ const OrderPickupDetail = ({ navigation, route }) => {
               backgroundColor: "#e9ecef",
               borderColor: "#ced4da",
             },
-           
           ]}
           onPress={() => {
             Alert.alert("Xác nhận", "Bạn có muốn tiếp tục không?", [
