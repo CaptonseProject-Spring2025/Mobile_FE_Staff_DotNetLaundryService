@@ -20,10 +20,9 @@ export default function usePushNotifications() {
   // Handle notification taps
   const handleNotificationResponse = (response) => {
     const data = response.notification?.request?.content?.data;
-    console.log("Handling foreground notification tap with data:", data);
 
     if (data) {
-      const { notificationType, orderId } = data;
+      const { notificationType } = data;
 
       if (notificationType === "AssignedPickup") {
         console.log("Navigating to DriverPickupScreen");
@@ -101,7 +100,7 @@ export default function usePushNotifications() {
           // Handle navigation after a delay to ensure navigation is ready
           setTimeout(() => {
             if (remoteMessage.data) {
-              const { notificationType, orderId } = remoteMessage.data;
+              const { notificationType } = remoteMessage.data;
 
               if (notificationType === "AssignedPickup") {
                 console.log("Navigating to DriverPickupScreen");

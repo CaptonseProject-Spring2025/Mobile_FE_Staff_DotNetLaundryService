@@ -57,13 +57,14 @@ const AddressNavigateMap = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentDriverLocation, setCurrentDriverLocation] = useState(null);
   const [lineUpdateKey, setLineUpdateKey] = useState(0);
-  const [forceUpdate, setForceUpdate] = useState(0);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isFetchingRoute, setIsFetchingRoute] = useState(false);
 
   const cameraRef = useRef(null);
   const mapViewRef = useRef(null);
   const arrowPositionRef = useRef(new Animated.Value(0)).current;
+   // Using a ref to keep track of the component's mount status
+  const isMounted = useRef(true);
 
   // Request permission and get current location
   useEffect(() => {
@@ -182,28 +183,12 @@ const AddressNavigateMap = () => {
     };
   }, [permissionStatus, orderId]);
 
-  // Force regular updates of the direct line but less frequently
-  useEffect(() => {
-    let isMounted = true;
-
-    const updateInterval = setInterval(() => {
-      if (isMounted) {
-        setForceUpdate((prev) => prev + 1);
-      }
-    }, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(updateInterval);
-    };
-  }, []);
-
-  // Update the direct line when forceUpdate changes
+  // Update the direct line when changes
   useEffect(() => {
     if (currentDriverLocation && userLocation) {
       setLineUpdateKey((prev) => prev + 1);
     }
-  }, [forceUpdate, currentDriverLocation, userLocation]);
+  }, [currentDriverLocation, userLocation]);
 
   // Get route when either location changes significantly
   useEffect(() => {
@@ -266,8 +251,6 @@ const AddressNavigateMap = () => {
       setIsFetchingRoute(false);
     }
   };
-  // Using a ref to keep track of the component's mount status
-  const isMounted = useRef(true);
 
   // Set isMounted to false when component unmounts
   useEffect(() => {

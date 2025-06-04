@@ -842,7 +842,7 @@ const OrderDetail = ({ navigation, route }) => {
                       orderDetail.deliveryAddressDetail ||
                       assignmentDetail?.deliveryAddress,
                   },
-                  showDrivingView: false, // Initially show the overview map
+                  showDrivingView: false,
                   showTravelingArrow: true,
                   orderId: orderDetail.orderId,
                 })
