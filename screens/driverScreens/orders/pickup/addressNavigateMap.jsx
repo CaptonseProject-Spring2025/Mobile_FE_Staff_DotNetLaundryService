@@ -68,7 +68,6 @@ const AddressNavigateMap = () => {
 
   // Request permission and get current location
   useEffect(() => {
-    let zoomTimerId;
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
