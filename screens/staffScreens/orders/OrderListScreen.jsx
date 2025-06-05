@@ -15,6 +15,7 @@ import useUserStore from "../../../api/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { ImageZoom } from '@likashefqet/react-native-image-zoom';
 
 const OrderListScreen = ({ navigation }) => {
   const {
@@ -34,6 +35,8 @@ const OrderListScreen = ({ navigation }) => {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [selectedStatusHistoryId, setSelectedStatusHistoryId] = useState(null);
+  const [fullScreenImageVisible, setFullScreenImageVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     fetchOrderInstore();
@@ -413,6 +416,11 @@ const OrderListScreen = ({ navigation }) => {
     );
   };
 
+  const openFullScreenImage = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setFullScreenImageVisible(true);
+  };
+
   return (
     <View className="flex-1 bg-gray-100">
       <View className="bg-white py-4 px-4 shadow-sm">
@@ -568,7 +576,9 @@ const OrderListScreen = ({ navigation }) => {
                   renderItem={({ item }) => (
                     <View className="p-1 w-1/2">
                       {item && item.photoUrl ? (
-                        <>
+                        <TouchableOpacity
+                          onPress={() => openFullScreenImage(item.photoUrl)}
+                        >
                           <Image
                             source={{ uri: item.photoUrl }}
                             className="w-full h-40 rounded-lg"
@@ -589,7 +599,7 @@ const OrderListScreen = ({ navigation }) => {
                               )}
                             </Text>
                           )}
-                        </>
+                        </TouchableOpacity>
                       ) : (
                         <View className="w-full h-40 rounded-lg bg-gray-200 justify-center items-center">
                           <Ionicons
@@ -611,6 +621,32 @@ const OrderListScreen = ({ navigation }) => {
                 </View>
               )}
             </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Full Screen Image Modal */}
+      {fullScreenImageVisible && selectedImage && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={fullScreenImageVisible}
+          onRequestClose={() => setFullScreenImageVisible(false)}
+        >
+          <View className="flex-1 bg-black">
+            <TouchableOpacity
+              className="absolute top-10 right-6 z-10"
+              onPress={() => setFullScreenImageVisible(false)}
+            >
+              <Ionicons name="close-circle" size={32} color="white" />
+            </TouchableOpacity>
+
+            <ImageZoom
+              uri={selectedImage}
+              minScale={0.5}
+              maxScale={3}
+              onLongPress={() => console.log("Image long pressed")}
+            />
           </View>
         </Modal>
       )}
