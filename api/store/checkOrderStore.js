@@ -8,7 +8,7 @@ const useCheckOrderStore = create((set) => ({
   fetchOrderInstore: async () => {
     try {
       set({ isLoadingOrderInstore: true, orderInstoreError: null });
-      const response = await axiosClient.get("/staff/orders/pickedup");
+      const response = await axiosClient.get("/staff/orders/arrived");
       set({ orderInstore: response.data, isLoadingOrderInstore: false });
       return data;
     } catch (error) {

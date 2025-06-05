@@ -293,17 +293,25 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
         >
           <ScrollView className="flex-1 p-4">
             {/* Order Info Card */}
-            <View className="bg-white rounded-xl shadow-sm p-5 mb-5">
-              <View className="flex-row justify-between items-center mb-3">
+            <View className="bg-white rounded-xl shadow-sm p-5 mb-5">              <View className="flex-row justify-between items-center mb-3">
                 <View className="bg-green-50 px-3 py-1 rounded-full">
                   <Text className="text-green-600 font-medium">
                     Mã đơn: {orderId}
                   </Text>
                 </View>
-                <View className="bg-orange-100 px-3 py-1 rounded-full">
-                  <Text className="text-orange-700 font-medium text-xs">
-                    {orderDetail.currentStatus}
-                  </Text>
+                <View className="flex-row items-center">
+                  {orderDetail.emergency && (
+                    <View className="bg-red-500 px-3 py-1 rounded-full mr-2">
+                      <Text className="text-white font-medium text-xs">
+                        Khẩn cấp
+                      </Text>
+                    </View>
+                  )}
+                  <View className="bg-orange-100 px-3 py-1 rounded-full">
+                    <Text className="text-orange-700 font-medium text-xs">
+                      {orderDetail.currentStatus}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -341,7 +349,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="calendar-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Ngày đặt:{" "}
+                    Ngày đặt:
                     {format(new Date(orderDetail.orderDate), "dd/MM/yyyy", {
                       locale: vi,
                     })}
@@ -350,7 +358,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian lấy:{" "}
+                    Thời gian lấy:
                     {format(
                       new Date(orderDetail.pickupTime),
                       "dd/MM/yyyy HH:mm",
@@ -361,7 +369,7 @@ const OrderDetailCheckedSceen = ({ route, navigation }) => {
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian giao:{" "}
+                    Thời gian giao:
                     {format(
                       new Date(orderDetail.deliveryTime),
                       "dd/MM/yyyy HH:mm",

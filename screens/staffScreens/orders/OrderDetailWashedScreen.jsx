@@ -22,13 +22,14 @@ import { ScrollView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { Checkbox } from "react-native-paper";
 
 const OrderDetailWashedScreen = ({ route, navigation }) => {
   const { orderId, orderDetail } = route.params;
   const [photos, setPhotos] = useState([]);
   const [note, setNote] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-
+  const [isFail, setIsFail] = useState(false);
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -164,21 +165,7 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
       setPhotos((prevPhotos) => [...prevPhotos, ...result.assets]);
     }
   };
-
-  const handleWashedConfirm = async () => {
-    if (!orderId) {
-      Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng.");
-      return;
-    }
-    if(!note) {
-      Alert.alert("Lỗi", "Vui lòng nhập ghi chú kiểm tra chất lượng.");
-      return;
-    }
-    if (photos.length === 0) {
-      Alert.alert("Lỗi", "Vui lòng chọn ít nhất một ảnh.");
-      return;
-    }
-
+  const prepareAndUploadFormData = () => {
     setIsUploading(true);
     const formData = new FormData();
 
@@ -187,6 +174,9 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
 
     // Thêm notes vào formData
     formData.append("notes", note);
+
+    // Add the isFail flag to formData
+    formData.append("isFail", isFail);
 
     // Thêm files vào formData
     try {
@@ -242,12 +232,47 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
           ]
         );
       } else {
-        await performQualityCheck(formData);
+        performQualityCheck(formData);
       }
     } catch (error) {
       console.error("Lỗi chuẩn bị dữ liệu:", error);
       Alert.alert("Lỗi", "Không thể chuẩn bị dữ liệu. Vui lòng thử lại.");
       setIsUploading(false);
+    }
+  };
+
+  const handleWashedConfirm = async () => {
+    if (!orderId) {
+      Alert.alert("Lỗi", "Không tìm thấy mã đơn hàng.");
+      return;
+    }
+    if (!note) {
+      Alert.alert("Lỗi", "Vui lòng nhập ghi chú kiểm tra chất lượng.");
+      return;
+    }
+    if (photos.length === 0) {
+      Alert.alert("Lỗi", "Vui lòng chọn ít nhất một ảnh.");
+      return;
+    }
+
+    // Check if the order is marked as damaged and show confirmation alert
+    if (isFail) {
+      Alert.alert(
+        "Xác nhận đơn hàng hỏng",
+        "Bạn đã đánh dấu đơn hàng này là hỏng. Bạn có chắc chắn muốn tiếp tục không?",
+        [
+          {
+            text: "Hủy",
+            style: "cancel",
+          },
+          {
+            text: "Tiếp tục",
+            onPress: () => prepareAndUploadFormData(),
+          },
+        ]
+      );
+    } else {
+      prepareAndUploadFormData();
     }
   };
 
@@ -261,7 +286,7 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
             "Content-Type": "multipart/form-data",
             Accept: "application/json",
           },
-          timeout: 60000, // 60 giây
+          timeout: 60000,
         }
       );
 
@@ -322,13 +347,21 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                     Mã đơn: {orderId}
                   </Text>
                 </View>
-                <View className="bg-green-100 px-3 py-1 rounded-full">
-                  <Text className="text-green-700 font-medium text-xs">
-                    {orderDetail.currentStatus}
-                  </Text>
+                <View className="flex-row items-center">
+                  {orderDetail.emergency && (
+                    <View className="bg-red-500 px-3 py-1 rounded-full mr-2">
+                      <Text className="text-white font-medium text-xs">
+                        Khẩn cấp
+                      </Text>
+                    </View>
+                  )}
+                  <View className="bg-green-100 px-3 py-1 rounded-full">
+                    <Text className="text-green-700 font-medium text-xs">
+                      {orderDetail.currentStatus}
+                    </Text>
+                  </View>
                 </View>
               </View>
-
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="person-outline" size={18} color="#4B5563" />
@@ -343,7 +376,6 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-
               <View className="border-b border-gray-100 pb-3 mb-3">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="shirt-outline" size={18} color="#4B5563" />
@@ -358,12 +390,11 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               </View>
-
               <View>
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="calendar-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Ngày đặt:{" "}
+                    Ngày đặt:
                     {format(new Date(orderDetail.orderDate), "dd/MM/yyyy", {
                       locale: vi,
                     })}
@@ -372,7 +403,7 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian lấy:{" "}
+                    Thời gian lấy:
                     {format(
                       new Date(orderDetail.pickupTime),
                       "dd/MM/yyyy HH:mm",
@@ -383,7 +414,7 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian giao:{" "}
+                    Thời gian giao:
                     {format(
                       new Date(orderDetail.deliveryTime),
                       "dd/MM/yyyy HH:mm",
@@ -407,6 +438,17 @@ const OrderDetailWashedScreen = ({ route, navigation }) => {
                 multiline={true}
                 numberOfLines={3}
               />
+            </View>
+            {/* Failed Order Checkbox  */}
+            <View className="mb-4 flex-row items-center">
+              <Checkbox
+                status={isFail ? "checked" : "unchecked"}
+                onPress={() => setIsFail(!isFail)}
+                color="#EF4444" // Red color for the checkbox
+              />
+              <Text className="text-gray-700 font-medium ml-2">
+                Đánh dấu đơn hàng có vấn đề/hư hỏng
+              </Text>
             </View>
 
             {/* Photo Gallery */}

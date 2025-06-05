@@ -74,16 +74,16 @@ export default function StaffrMenu({ navigation }) {
     },
     {
       icon: "✓",
-      title: "Đơn Nhận Check",
-      description: "Danh sách đơn hàng nhận check",
+      title: "Đơn Nhận kiểm tra",
+      description: "Danh sách đơn hàng nhận kiểm tra",
       route: "OrderCheckingListScreen",
       bgColor: "bg-amber-500",
       count: orderChecking?.length || 0
     },
     {
       icon: "✓✓",
-      title: "Đơn Nhận Checked",
-      description: "Danh sách đơn hàng nhận checked",
+      title: "Đơn Nhận đã kiểm tra",
+      description: "Danh sách đơn hàng nhận đã kiểm tra",
       route: "OrderListCheckedScreen",
       bgColor: "bg-orange-500",
       count: orderChecked?.length || 0

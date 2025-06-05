@@ -439,10 +439,19 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
                     Mã đơn: {orderId}
                   </Text>
                 </View>
-                <View className="bg-blue-100 px-3 py-1 rounded-full">
-                  <Text className="text-blue-700 font-medium text-xs">
-                    {orderDetail.currentStatus}
-                  </Text>
+                <View className="flex-row items-center">
+                  {orderDetail.emergency && (
+                    <View className="bg-red-500 px-3 py-1 rounded-full mr-2">
+                      <Text className="text-white font-medium text-xs">
+                        Khẩn cấp
+                      </Text>
+                    </View>
+                  )}
+                  <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 font-medium text-xs">
+                      {orderDetail.currentStatus}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -480,7 +489,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="calendar-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Ngày đặt:{" "}
+                    Ngày đặt:
                     {format(new Date(orderDetail.orderDate), "dd/MM/yyyy", {
                       locale: vi,
                     })}
@@ -489,7 +498,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian lấy:{" "}
+                    Thời gian lấy:
                     {format(
                       new Date(orderDetail.pickupTime),
                       "dd/MM/yyyy HH:mm",
@@ -500,7 +509,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={18} color="#4B5563" />
                   <Text className="text-gray-600 ml-2">
-                    Thời gian giao:{" "}
+                    Thời gian giao:
                     {format(
                       new Date(orderDetail.deliveryTime),
                       "dd/MM/yyyy HH:mm",
