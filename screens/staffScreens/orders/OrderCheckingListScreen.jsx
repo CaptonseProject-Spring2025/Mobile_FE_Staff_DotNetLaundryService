@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Button, Alert, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Button,
+  Alert,
+  Image,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import useCheckOrderStore from "../../../api/store/checkOrderStore";
 import useUserStore from "../../../api/store/userStore";
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { ImageZoom } from "@likashefqet/react-native-image-zoom";
 
 function OrderCheckingListScreen({ navigation }) {
   const {
@@ -16,7 +25,7 @@ function OrderCheckingListScreen({ navigation }) {
     fetchOrderHistory,
     orderHistory,
     fetchOrderStatusPhotos,
-    orderStatusPhotos
+    orderStatusPhotos,
   } = useCheckOrderStore();
   const { getUserById } = useUserStore();
   const [customerDetails, setCustomerDetails] = useState({});
@@ -26,6 +35,9 @@ function OrderCheckingListScreen({ navigation }) {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [selectedStatusHistoryId, setSelectedStatusHistoryId] = useState(null);
+  const [zoomedImageUri, setZoomedImageUri] = useState(null);
+  const [fullScreenImageVisible, setFullScreenImageVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     fetchOrderChecking(); // Gọi API để lấy danh sách đơn hàng CHECKING
@@ -35,7 +47,7 @@ function OrderCheckingListScreen({ navigation }) {
     const unsubscribe = navigation.addListener("focus", () => {
       fetchOrderChecking(); // Gọi lại API khi màn hình được focus
     });
-  
+
     return unsubscribe; // Hủy đăng ký sự kiện khi component bị unmount
   }, [navigation]);
 
@@ -48,7 +60,9 @@ function OrderCheckingListScreen({ navigation }) {
           if (order.customerInfo && order.customerInfo.customerId) {
             // Kiểm tra xem đã lấy thông tin của khách hàng này chưa
             if (!details[order.customerInfo.customerId]) {
-              const customerData = await getUserById(order.customerInfo.customerId);
+              const customerData = await getUserById(
+                order.customerInfo.customerId
+              );
               if (customerData) {
                 details[order.customerInfo.customerId] = customerData;
               }
@@ -58,21 +72,21 @@ function OrderCheckingListScreen({ navigation }) {
         setCustomerDetails(details);
       }
     };
-    
+
     fetchCustomerDetails();
   }, [orderChecking]);
 
   const handleImageError = (customerId) => {
-    setImageErrors(prev => ({
+    setImageErrors((prev) => ({
       ...prev,
-      [customerId]: true
+      [customerId]: true,
     }));
   };
 
   const toggleCustomerDetails = (customerId) => {
-    setExpandedCustomers(prev => ({
+    setExpandedCustomers((prev) => ({
       ...prev,
-      [customerId]: !prev[customerId]
+      [customerId]: !prev[customerId],
     }));
   };
 
@@ -86,19 +100,26 @@ function OrderCheckingListScreen({ navigation }) {
   // Hàm chuyển đổi trạng thái thành màu sắc
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active': return 'bg-green-500';
-      case 'Inactive': return 'bg-gray-500';
-      case 'Suspended': return 'bg-red-500';
-      default: return 'bg-blue-500';
+      case "Active":
+        return "bg-green-500";
+      case "Inactive":
+        return "bg-gray-500";
+      case "Suspended":
+        return "bg-red-500";
+      default:
+        return "bg-blue-500";
     }
   };
 
   // Hàm chuyển đổi giới tính thành icon
   const getGenderIcon = (gender) => {
     switch (gender) {
-      case 'Male': return 'male';
-      case 'Female': return 'female';
-      default: return 'help-circle';
+      case "Male":
+        return "male";
+      case "Female":
+        return "female";
+      default:
+        return "help-circle";
     }
   };
 
@@ -109,7 +130,10 @@ function OrderCheckingListScreen({ navigation }) {
       setHistoryModalVisible(true);
     } catch (error) {
       console.error("Error fetching order history:", error);
-      Alert.alert("Lỗi", "Không thể lấy lịch sử đơn hàng. Vui lòng thử lại sau.");
+      Alert.alert(
+        "Lỗi",
+        "Không thể lấy lịch sử đơn hàng. Vui lòng thử lại sau."
+      );
     }
   };
 
@@ -117,32 +141,53 @@ function OrderCheckingListScreen({ navigation }) {
     setSelectedStatusHistoryId(statusHistoryId);
     try {
       console.log("Fetching photos for status history ID:", statusHistoryId);
-      const photos = await fetchOrderStatusPhotos(statusHistoryId);
-      console.log("Photos received:", photos);
-      
-      if (photos && photos.length > 0) {
-        console.log("Opening photo modal with", photos.length, "photos");
+      await fetchOrderStatusPhotos(statusHistoryId);
+
+      // Check if photos were successfully fetched
+      if (orderStatusPhotos && orderStatusPhotos.length > 0) {
+        console.log("Photos available:", orderStatusPhotos);
         setPhotoModalVisible(true);
       } else {
         console.log("No photos found");
-        Alert.alert("Thông báo", "Không tìm thấy hình ảnh đính kèm cho trạng thái này.");
+        Alert.alert(
+          "Thông báo",
+          "Không tìm thấy hình ảnh đính kèm cho trạng thái này."
+        );
       }
     } catch (error) {
       console.error("Error fetching status photos:", error);
-      Alert.alert("Lỗi", "Không thể lấy hình ảnh đính kèm. Vui lòng thử lại sau.");
+      Alert.alert(
+        "Lỗi",
+        "Không thể lấy hình ảnh đính kèm. Vui lòng thử lại sau."
+      );
     }
+  };
+
+  const openFullScreenImage = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setFullScreenImageVisible(true);
   };
 
   const getStatusColorClass = (status) => {
     switch (status) {
-      case 'PENDING': return 'bg-blue-100 text-blue-700';
-      case 'CONFIRMED': return 'bg-green-100 text-green-700';
-      case 'SCHEDULED_PICKUP': return 'bg-indigo-100 text-indigo-700';
-      case 'PICKINGUP': return 'bg-purple-100 text-purple-700';
-      case 'PICKEDUP': return 'bg-amber-100 text-amber-700';
-      case 'PICKUP_SUCCESS': return 'bg-emerald-100 text-emerald-700';
-      case 'CHECKING': return 'bg-orange-100 text-orange-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case "PENDING":
+        return "bg-blue-100 text-blue-700";
+      case "CONFIRMED":
+        return "bg-green-100 text-green-700";
+      case "SCHEDULED_PICKUP":
+        return "bg-indigo-100 text-indigo-700";
+      case "PICKINGUP":
+        return "bg-purple-100 text-purple-700";
+      case "PICKEDUP":
+        return "bg-amber-100 text-amber-700";
+      case "PICKUP_SUCCESS":
+        return "bg-emerald-100 text-emerald-700";
+      case "ARRIVED":
+        return "bg-yellow-100 text-yellow-700";
+      case "CHECKING":
+        return "bg-orange-100 text-orange-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -150,7 +195,7 @@ function OrderCheckingListScreen({ navigation }) {
     const customerDetail = customerDetails[item.customerInfo.customerId];
     const hasImageError = imageErrors[item.customerInfo.customerId];
     const isExpanded = expandedCustomers[item.customerInfo.customerId];
-    
+
     return (
       <TouchableOpacity
         className="bg-white rounded-xl shadow-sm mb-4 p-4"
@@ -169,10 +214,10 @@ function OrderCheckingListScreen({ navigation }) {
               Mã đơn: {item.orderId}
             </Text>
           </View>
-          
+
           {/* Buttons line */}
           <View className="flex-row items-center">
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => showOrderHistory(item.orderId)}
               className="bg-indigo-100 px-3 py-1 rounded-full mr-2"
             >
@@ -180,7 +225,7 @@ function OrderCheckingListScreen({ navigation }) {
                 Lịch sử
               </Text>
             </TouchableOpacity>
-            
+
             <View className="bg-amber-100 px-3 py-1 rounded-full">
               <Text className="text-amber-700 font-medium text-xs">
                 {item.currentStatus}
@@ -190,20 +235,24 @@ function OrderCheckingListScreen({ navigation }) {
         </View>
 
         {/* Customer Info */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => toggleCustomerDetails(item.customerInfo.customerId)}
           className="bg-gray-50 rounded-lg p-3 mb-3"
         >
           <View className="flex-row justify-between items-center">
             <View className="flex-row items-center flex-1">
               {customerDetail && customerDetail.avatar && !hasImageError ? (
-                <Image 
-                  source={{ uri: customerDetail.avatar }} 
+                <Image
+                  source={{ uri: customerDetail.avatar }}
                   className="w-10 h-10 rounded-full"
                   onError={() => handleImageError(item.customerInfo.customerId)}
                 />
               ) : (
-                <Ionicons name="person-circle-outline" size={24} color="#4B5563" />
+                <Ionicons
+                  name="person-circle-outline"
+                  size={24}
+                  color="#4B5563"
+                />
               )}
               <View className="ml-2">
                 <Text className="text-gray-800 font-medium text-base">
@@ -236,10 +285,10 @@ function OrderCheckingListScreen({ navigation }) {
               >
                 <Ionicons name="chatbubble-outline" size={20} color="white" />
               </TouchableOpacity> */}
-              <Ionicons 
-                name={isExpanded ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color="#4B5563" 
+              <Ionicons
+                name={isExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#4B5563"
               />
             </View>
           </View>
@@ -249,32 +298,51 @@ function OrderCheckingListScreen({ navigation }) {
             <View className="mt-3 pt-3 border-t border-gray-200">
               <View className="flex-row justify-between mb-2">
                 <View className="flex-row items-center">
-                  <Ionicons name={getGenderIcon(customerDetail.gender)} size={16} color="#4B5563" />
+                  <Ionicons
+                    name={getGenderIcon(customerDetail.gender)}
+                    size={16}
+                    color="#4B5563"
+                  />
                   <Text className="text-gray-700 text-xs ml-1">
-                    {customerDetail.gender || 'Chưa có thông tin'}
+                    {customerDetail.gender || "Chưa có thông tin"}
                   </Text>
                 </View>
-                
+
                 <View className="flex-row items-center">
                   <Ionicons name="calendar" size={16} color="#4B5563" />
                   <Text className="text-gray-700 text-xs ml-1">
-                    {customerDetail.dob ? format(new Date(customerDetail.dob), 'dd/MM/yyyy', { locale: vi }) : 'Chưa có thông tin'}
+                    {customerDetail.dob
+                      ? format(new Date(customerDetail.dob), "dd/MM/yyyy", {
+                          locale: vi,
+                        })
+                      : "Chưa có thông tin"}
                   </Text>
                 </View>
               </View>
-              
+
               <View className="flex-row justify-between">
                 <View className="flex-row items-center">
-                  <View className={`w-2 h-2 rounded-full ${getStatusColor(customerDetail.status)} mr-1`} />
+                  <View
+                    className={`w-2 h-2 rounded-full ${getStatusColor(
+                      customerDetail.status
+                    )} mr-1`}
+                  />
                   <Text className="text-gray-700 text-xs">
-                    {customerDetail.status || 'Chưa có thông tin'}
+                    {customerDetail.status || "Chưa có thông tin"}
                   </Text>
                 </View>
-                
+
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={16} color="#4B5563" />
                   <Text className="text-gray-700 text-xs ml-1">
-                    Tham gia: {customerDetail.dateCreated ? format(new Date(customerDetail.dateCreated), 'dd/MM/yyyy', { locale: vi }) : 'Chưa có thông tin'}
+                    Tham gia:{" "}
+                    {customerDetail.dateCreated
+                      ? format(
+                          new Date(customerDetail.dateCreated),
+                          "dd/MM/yyyy",
+                          { locale: vi }
+                        )
+                      : "Chưa có thông tin"}
                   </Text>
                 </View>
               </View>
@@ -290,7 +358,9 @@ function OrderCheckingListScreen({ navigation }) {
           </View>
           <View className="flex-row items-center">
             <Ionicons name="cube-outline" size={20} color="#4B5563" />
-            <Text className="text-gray-800 ml-2">Số lượng: {item.serviceCount}</Text>
+            <Text className="text-gray-800 ml-2">
+              Số lượng: {item.serviceCount}
+            </Text>
           </View>
         </View>
 
@@ -299,19 +369,28 @@ function OrderCheckingListScreen({ navigation }) {
           <View className="flex-row items-center mb-2">
             <Ionicons name="calendar-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Ngày đặt: {format(new Date(item.orderDate), 'dd/MM/yyyy HH:mm', { locale: vi })}
+              Ngày đặt:{" "}
+              {format(new Date(item.orderDate), "dd/MM/yyyy HH:mm", {
+                locale: vi,
+              })}
             </Text>
           </View>
           <View className="flex-row items-center mb-2">
             <Ionicons name="time-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Thời gian lấy: {format(new Date(item.pickupTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+              Thời gian lấy:{" "}
+              {format(new Date(item.pickupTime), "dd/MM/yyyy HH:mm", {
+                locale: vi,
+              })}
             </Text>
           </View>
           <View className="flex-row items-center">
             <Ionicons name="time-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Thời gian giao: {format(new Date(item.deliveryTime), 'dd/MM/yyyy HH:mm', { locale: vi })}
+              Thời gian giao:{" "}
+              {format(new Date(item.deliveryTime), "dd/MM/yyyy HH:mm", {
+                locale: vi,
+              })}
             </Text>
           </View>
         </View>
@@ -345,20 +424,18 @@ function OrderCheckingListScreen({ navigation }) {
           Danh sách đơn hàng đang CHECKING
         </Text>
       </View>
-      
       <FlatList
         data={orderChecking}
         renderItem={renderOrderItem}
-        keyExtractor={item => item.orderId}
+        keyExtractor={(item) => item.orderId}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
       />
-
       {/* Order History Bottom Sheet */}
       {historyModalVisible && (
-        <View 
-          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-lg" 
-          style={{ height: '80%' }}
+        <View
+          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-lg"
+          style={{ height: "80%" }}
         >
           <View className="p-4 border-b border-gray-200">
             <View className="flex-row justify-between items-center">
@@ -370,10 +447,12 @@ function OrderCheckingListScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           <FlatList
             data={orderHistory || []}
-            keyExtractor={(item, index) => item.statusHistoryId || index.toString()}
+            keyExtractor={(item, index) =>
+              item.statusHistoryId || index.toString()
+            }
             contentContainerStyle={{ padding: 16 }}
             ListEmptyComponent={
               <View className="flex-1 justify-center items-center py-12">
@@ -387,53 +466,68 @@ function OrderCheckingListScreen({ navigation }) {
               <View className="mb-4 border-l-2 border-gray-300 pl-4 relative">
                 {/* Status dot */}
                 <View className="absolute -left-[6px] top-0 w-3 h-3 rounded-full bg-gray-500" />
-                
+
                 {/* Status header */}
                 <View className="flex-row items-center mb-1">
-                  <View className={`px-2 py-1 rounded-full ${getStatusColorClass(item.status).split(' ')[0]}`}>
-                    <Text className={`font-medium text-xs ${getStatusColorClass(item.status).split(' ')[1]}`}>
+                  <View
+                    className={`px-2 py-1 rounded-full ${
+                      getStatusColorClass(item.status).split(" ")[0]
+                    }`}
+                  >
+                    <Text
+                      className={`font-medium text-xs ${
+                        getStatusColorClass(item.status).split(" ")[1]
+                      }`}
+                    >
                       {item.status}
                     </Text>
                   </View>
                 </View>
-                
+
                 <Text className="text-gray-800 font-medium mb-1">
                   {item.statusDescription}
                 </Text>
-                
+
                 {item.notes && (
                   <Text className="text-gray-600 mb-1">
                     Ghi chú: {item.notes}
                   </Text>
                 )}
-                
+
                 {/* User info */}
                 {item.updatedBy && (
                   <View className="flex-row items-center mb-1">
                     <Ionicons name="person-outline" size={14} color="#4B5563" />
                     <Text className="text-gray-600 text-xs ml-1">
-                      Cập nhật bởi: {item.updatedBy.fullName} ({item.updatedBy.phoneNumber})
+                      Cập nhật bởi: {item.updatedBy.fullName} (
+                      {item.updatedBy.phoneNumber})
                     </Text>
                   </View>
                 )}
-                
+
                 {/* Timestamp */}
                 {item.createdAt && (
                   <View className="flex-row items-center">
                     <Ionicons name="time-outline" size={14} color="#4B5563" />
                     <Text className="text-gray-500 text-xs ml-1">
-                      {format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      {format(new Date(item.createdAt), "dd/MM/yyyy HH:mm", {
+                        locale: vi,
+                      })}
                     </Text>
                   </View>
                 )}
-                
+
                 {item.containMedia && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     className="mt-2 bg-indigo-50 p-2 rounded-lg"
                     onPress={() => showStatusPhotos(item.statusHistoryId)}
                   >
                     <View className="flex-row items-center">
-                      <Ionicons name="image-outline" size={16} color="#4F46E5" />
+                      <Ionicons
+                        name="image-outline"
+                        size={16}
+                        color="#4F46E5"
+                      />
                       <Text className="text-indigo-700 text-xs ml-1">
                         Xem hình ảnh đính kèm
                       </Text>
@@ -445,13 +539,17 @@ function OrderCheckingListScreen({ navigation }) {
           />
         </View>
       )}
-      
       {/* Photos Modal */}
       {photoModalVisible && (
-        <View className="absolute inset-0 bg-black/80 z-50">
-          <View className="bg-white rounded-t-3xl h-5/6 mt-auto">
-            <View className="p-4 border-b border-gray-200">
-              <View className="flex-row justify-between items-center">
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={photoModalVisible}
+          onRequestClose={() => setPhotoModalVisible(false)}
+        >
+          <View className="flex-1 justify-center items-center bg-black/80">
+            <View className="bg-white rounded-xl w-11/12 max-h-[80%] p-4">
+              <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-bold text-gray-800">
                   Hình ảnh đính kèm
                 </Text>
@@ -459,39 +557,90 @@ function OrderCheckingListScreen({ navigation }) {
                   <Ionicons name="close" size={24} color="#4B5563" />
                 </TouchableOpacity>
               </View>
-            </View>
-            
-            <FlatList
-              data={orderStatusPhotos || []}
-              keyExtractor={(item, index) => item.photoUrl || index.toString()}
-              numColumns={2}
-              contentContainerStyle={{ padding: 16 }}
-              ListEmptyComponent={
+
+              {orderStatusPhotos && orderStatusPhotos.length > 0 ? (
+                <FlatList
+                  data={orderStatusPhotos}
+                  keyExtractor={(item, index) =>
+                    item?.photoUrl || `photo-${index}`
+                  }
+                  numColumns={2}
+                  contentContainerStyle={{ padding: 4 }}
+                  renderItem={({ item }) => (
+                    <View className="p-1 w-1/2">
+                      {item && item.photoUrl ? (
+                        <TouchableOpacity
+                          onPress={() => openFullScreenImage(item.photoUrl)}
+                        >
+                          <Image
+                            source={{ uri: item.photoUrl }}
+                            className="w-full h-40 rounded-lg"
+                            resizeMode="cover"
+                            onError={() =>
+                              console.error(
+                                "Error loading image:",
+                                item.photoUrl
+                              )
+                            }
+                          />
+                          {item.createdAt && (
+                            <Text className="text-xs text-gray-500 mt-1">
+                              {format(
+                                new Date(item.createdAt),
+                                "dd/MM/yyyy HH:mm",
+                                { locale: vi }
+                              )}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <View className="w-full h-40 rounded-lg bg-gray-200 justify-center items-center">
+                          <Ionicons
+                            name="image-outline"
+                            size={32}
+                            color="#9CA3AF"
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
+                />
+              ) : (
                 <View className="flex-1 justify-center items-center py-12">
                   <Ionicons name="images-outline" size={48} color="#D1D5DB" />
-                  <Text className="text-center text-gray-500 mt-4">
+                  <Text className="text-center text-gray-500 mt-4 text-base">
                     Không có hình ảnh
                   </Text>
                 </View>
-              }
-              renderItem={({ item }) => (
-                <View className="p-1 w-1/2">
-                  <Image
-                    source={{ uri: item.photoUrl }}
-                    className="w-full h-40 rounded-lg"
-                    resizeMode="cover"
-                    onError={() => console.error("Error loading image:", item.photoUrl)}
-                  />
-                  {item.createdAt && (
-                    <Text className="text-xs text-gray-500 mt-1">
-                      {format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                    </Text>
-                  )}
-                </View>
               )}
+            </View>
+          </View>
+        </Modal>
+      )}
+      {/* Full Screen Image Modal */}
+      {fullScreenImageVisible && selectedImage && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={fullScreenImageVisible}
+          onRequestClose={() => setFullScreenImageVisible(false)}
+        >
+          <View className="flex-1">
+            <TouchableOpacity
+              className="absolute top-10 right-6 z-10 bg-black"
+              onPress={() => setFullScreenImageVisible(false)}
+            >
+              <Ionicons name="close-circle" size={32} color="white" />
+            </TouchableOpacity>
+
+            <ImageZoom
+              uri={selectedImage}
+              minScale={0.5}
+              maxScale={3}
+              onLongPress={() => console.log("Image long pressed")}
             />
           </View>
-        </View>
+        </Modal>
       )}
     </View>
   );

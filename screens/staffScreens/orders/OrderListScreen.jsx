@@ -15,7 +15,7 @@ import useUserStore from "../../../api/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ImageZoom } from '@likashefqet/react-native-image-zoom';
+import { ImageZoom } from "@likashefqet/react-native-image-zoom";
 
 const OrderListScreen = ({ navigation }) => {
   const {
@@ -186,7 +186,7 @@ const OrderListScreen = ({ navigation }) => {
       case "PICKUP_SUCCESS":
         return "bg-emerald-100 text-emerald-700";
       case "ARRIVED":
-        return "bg-emerald-100 text-emerald-700";
+        return "bg-yellow-100 text-yellow-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -328,7 +328,7 @@ const OrderListScreen = ({ navigation }) => {
                 <View className="flex-row items-center">
                   <Ionicons name="time-outline" size={16} color="#4B5563" />
                   <Text className="text-gray-700 text-xs ml-1">
-                    Tham gia:{" "}
+                    Tham gia:
                     {customerDetail.dateCreated
                       ? format(
                           new Date(customerDetail.dateCreated),
@@ -362,7 +362,7 @@ const OrderListScreen = ({ navigation }) => {
           <View className="flex-row items-center mb-2">
             <Ionicons name="calendar-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Ngày đặt:{" "}
+              Ngày đặt:
               {format(new Date(item.orderDate), "dd/MM/yyyy HH:mm", {
                 locale: vi,
               })}
@@ -371,7 +371,7 @@ const OrderListScreen = ({ navigation }) => {
           <View className="flex-row items-center mb-2">
             <Ionicons name="time-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Thời gian lấy:{" "}
+              Thời gian lấy:
               {format(new Date(item.pickupTime), "dd/MM/yyyy HH:mm", {
                 locale: vi,
               })}
@@ -380,7 +380,7 @@ const OrderListScreen = ({ navigation }) => {
           <View className="flex-row items-center">
             <Ionicons name="time-outline" size={18} color="#4B5563" />
             <Text className="text-gray-600 ml-2">
-              Thời gian giao:{" "}
+              Thời gian giao:
               {format(new Date(item.deliveryTime), "dd/MM/yyyy HH:mm", {
                 locale: vi,
               })}
@@ -633,9 +633,9 @@ const OrderListScreen = ({ navigation }) => {
           visible={fullScreenImageVisible}
           onRequestClose={() => setFullScreenImageVisible(false)}
         >
-          <View className="flex-1 bg-black">
+          <View className="flex-1">
             <TouchableOpacity
-              className="absolute top-10 right-6 z-10"
+              className="absolute top-10 right-6 z-10 bg-black"
               onPress={() => setFullScreenImageVisible(false)}
             >
               <Ionicons name="close-circle" size={32} color="white" />
