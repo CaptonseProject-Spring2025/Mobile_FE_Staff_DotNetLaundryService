@@ -93,14 +93,20 @@ const useOrderStore = create((set) => ({
 
   isLoadingRevicedPickUp: false,
   revicedPickUpError: null,
-  revicedPickUp: async (orderId) => {
+  revicedPickUp: async (formData) => {
     try {
       set({ isLoadingRevicedPickUp: true, revicedPickUpError: null });
       const response = await axiosClient.post(
-        `/driver/confirm-pickup-success?orderId=${orderId}`
+        `/driver/confirm-pickup-arrived`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       set({ isLoadingRevicedPickUp: false });
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error confirming pick up:", error);
       set({ revicedPickUpError: error.message, isLoadingRevicedPickUp: false });

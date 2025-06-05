@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import messaging from "@react-native-firebase/messaging";
 import { useNavigation } from "@react-navigation/native";
 import useNotificationStore from "./notificationStore";
+import useOrderStore from "./orderStore";
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -16,6 +17,7 @@ Notifications.setNotificationHandler({
 export default function usePushNotifications() {
   const navigation = useNavigation();
   const { fetchNotifications } = useNotificationStore();
+  const { fetchAssignmentList } = useOrderStore();
 
   // Handle notification taps
   const handleNotificationResponse = (response) => {
@@ -62,6 +64,9 @@ export default function usePushNotifications() {
 
         // Refresh notification list
         fetchNotifications();
+
+        //Refresh assignments list
+        fetchAssignmentList();
       }
     );
 
@@ -104,16 +109,18 @@ export default function usePushNotifications() {
 
               if (notificationType === "AssignedPickup") {
                 console.log("Navigating to DriverPickupScreen");
-              
+
                 navigation.navigate("DriverPickupScreen");
               } else if (notificationType === "AssignedDelivery") {
                 console.log("Navigating to DriverDeliveryScreen");
-               
+
                 navigation.navigate("DriverDeliveryScreen");
               } else {
                 console.log("Navigating to Notification screen");
                 navigation.navigate("Thông báo");
-                navigation.navigate("Thông báo", { screen: "DriverNotification" });
+                navigation.navigate("Thông báo", {
+                  screen: "DriverNotification",
+                });
               }
             }
           }, 1000);
@@ -123,7 +130,7 @@ export default function usePushNotifications() {
     // Register background message handler
     messaging().setBackgroundMessageHandler(async (remoteMessage) => {
       console.log("Background message received:", remoteMessage);
-    
+
       return Promise.resolve();
     });
 
@@ -134,5 +141,5 @@ export default function usePushNotifications() {
     };
   }, [navigation, fetchNotifications]);
 
-  return null; 
+  return null;
 }

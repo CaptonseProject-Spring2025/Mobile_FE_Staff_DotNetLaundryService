@@ -77,6 +77,21 @@ const StatisticScreen = () => {
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " đ";
   };
 
+  const formatDateTime = (timestamp) => {
+    if (!timestamp) return "";
+
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return timestamp;
+
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
   const renderItem = ({ item }) => {
     let assignmentStatusLabel = "";
     if (item.assignmentStatus === "PICKUP_SUCCESS") {
@@ -94,9 +109,15 @@ const StatisticScreen = () => {
           <Text className="text-base font-medium">
             Loại task: {assignmentStatusLabel}
           </Text>
-          <Text style={styles.taskTime}>{item.completedAt}</Text>
+          <Text style={styles.taskTime}>
+            {formatDateTime(item.completedAt)}
+          </Text>
         </View>
-        <Text style={styles.taskAmount}>{formatCurrency(item.totalPrice)}</Text>
+        {item.assignmentStatus !== "PICKUP_SUCCESS" && (
+          <Text style={styles.taskAmount}>
+            {formatCurrency(item.totalPrice)}
+          </Text>
+        )}
       </View>
     );
   };
@@ -121,13 +142,14 @@ const StatisticScreen = () => {
     if (timeRange === "day") return dailyList;
     if (timeRange === "week") return weeklyList;
     if (timeRange === "month") return monthlyList;
-    return dailyList; // default to daily
+    return dailyList;
   };
 
   const getMonthName = () => {
     const date = new Date();
     return `Tháng ${date.getMonth() + 1}`;
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.timeSelector}>

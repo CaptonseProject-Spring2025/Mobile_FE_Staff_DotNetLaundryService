@@ -12,12 +12,14 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Image,
+  ScrollView,
 } from "react-native";
 import { Divider } from "react-native-paper";
 import useOrderStore from "../../../../api/store/orderStore";
 import Toast from "react-native-toast-message";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
 
 const ConfirmList = ({ searchQuery = "" }) => {
   const [refreshing, setRefreshing] = useState(false);
@@ -32,7 +34,9 @@ const ConfirmList = ({ searchQuery = "" }) => {
     isLoadingFinishDelivery,
   } = useOrderStore();
   const [filteredOrders, setFilteredOrders] = useState([]);
-
+  const [images, setImages] = useState([]);
+  const [completeModalVisible, setCompleteModalVisible] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   useEffect(() => {
     fetchAssignmentList();
   }, [fetchAssignmentList]);
@@ -48,8 +52,10 @@ const ConfirmList = ({ searchQuery = "" }) => {
       setFilteredOrders(
         assignmentList.filter(
           (order) =>
-            (order.status === "ASSIGNED_PICKUP" && order.currentStatus === "PICKEDUP") ||
-            (order.status === "ASSIGNED_DELIVERY" && order.currentStatus === "DELIVERED")
+            (order.status === "ASSIGNED_PICKUP" &&
+              order.currentStatus === "PICKEDUP") ||
+            (order.status === "ASSIGNED_DELIVERY" &&
+              order.currentStatus === "DELIVERED")
         )
       );
     }
@@ -64,20 +70,101 @@ const ConfirmList = ({ searchQuery = "" }) => {
     }, 2000);
   };
 
-  const handleConfirmPickup = async (orderId) => {
-    try {
-      await revicedPickUp(orderId);
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+    });
 
-      Toast.show({
-        type: "success",
-        text1: "Xác nhận thành công",
-        text2: "Đơn hàng đã được xác nhận.",
-      });
-      fetchAssignmentList();
+    if (!result.canceled) {
+      if (result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setImages([...images, ...newImageUris]);
+      } else if (result.uri) {
+        setImages([...images, result.uri]);
+      }
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Bạn cần cấp quyền truy cập camera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.5,
+      base64: false,
+      exif: false,
+    });
+
+    if (result.canceled) {
+      console.log("Người dùng đã hủy chụp ảnh.");
+      return;
+    }
+
+    if (result.assets && result.assets.length > 0) {
+      const newImageUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newImageUris]);
+    } else if (result.uri) {
+      setImages([...images, result.uri]);
+    }
+  };
+
+  const handleConfirmPickup = async (orderId) => {
+    setSelectedOrderId(orderId);
+    setCompleteModalVisible(true);
+  };
+
+  const submitPickupConfirmation = async () => {
+    if (!images || images.length === 0) {
+      return Alert.alert(
+        "Thiếu thông tin",
+        "Vui lòng gửi ít nhất một ảnh xác nhận lấy hàng",
+        [{ text: "OK" }]
+      );
+    }
+
+    const formData = new FormData();
+    formData.append("orderId", selectedOrderId); // Use the stored ID
+
+    // Append image with proper structure for FormData
+    const imageUri = images[0];
+    const imageName = imageUri.split("/").pop();
+    const imageType =
+      "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
+
+    formData.append("image", {
+      uri: imageUri,
+      name: imageName,
+      type: imageType,
+    });
+
+    try {
+      const reponse = await revicedPickUp(formData);
+      if (reponse && reponse.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Xác nhận thành công",
+          text2: "Đơn hàng đã được xác nhận.",
+        });
+        setCompleteModalVisible(false);
+        setImages([]);
+        fetchAssignmentList();
+      }
     } catch (error) {
-      Alert.alert("Lỗi", error?.response?.data);
+      Alert.alert("Lỗi", error?.response?.data.message || "Có lỗi xảy ra");
       console.log("Error message:", error?.message);
-      console.log("Error status:", error?.response?.status);
+      console.log("Error status:", error?.response?.data.message);
     }
   };
 
@@ -96,7 +183,7 @@ const ConfirmList = ({ searchQuery = "" }) => {
       console.log("Error message:", error?.message);
       console.log("Error status:", error?.response?.status);
     }
-  }
+  };
 
   if (isLoadingOrderList) {
     return (
@@ -188,12 +275,20 @@ const ConfirmList = ({ searchQuery = "" }) => {
             style={[
               styles.confirmButton,
               { backgroundColor: "#1E88E5" },
-              (isLoadingRevicedPickUp || isLoadingFinishDelivery) && { opacity: 0.7 },
+              (isLoadingRevicedPickUp || isLoadingFinishDelivery) && {
+                opacity: 0.7,
+              },
             ]}
             onPress={() => {
-              if (item.status === "ASSIGNED_PICKUP" && item.currentStatus === "PICKEDUP") {
+              if (
+                item.status === "ASSIGNED_PICKUP" &&
+                item.currentStatus === "PICKEDUP"
+              ) {
                 handleConfirmPickup(item.orderId);
-              } else if (item.status === "ASSIGNED_DELIVERY" && item.currentStatus === "DELIVERED") {
+              } else if (
+                item.status === "ASSIGNED_DELIVERY" &&
+                item.currentStatus === "DELIVERED"
+              ) {
                 handleConfirmDelivery(item.orderId);
               }
             }}
@@ -203,7 +298,8 @@ const ConfirmList = ({ searchQuery = "" }) => {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonTextStyle}>
-                {item.status === "ASSIGNED_PICKUP" && item.currentStatus === "PICKEDUP"
+                {item.status === "ASSIGNED_PICKUP" &&
+                item.currentStatus === "PICKEDUP"
                   ? "Xác nhận đơn hàng đã lấy"
                   : "Xác nhận đơn hàng đã giao"}
               </Text>
@@ -229,6 +325,108 @@ const ConfirmList = ({ searchQuery = "" }) => {
         style={{ marginTop: 10 }}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
+
+      {/* Complete Order Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={completeModalVisible}
+        onRequestClose={() => {
+          setCompleteModalVisible(false);
+          setImages([]);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.centeredView}
+        >
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Xác nhận đơn hàng đã lấy</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={handleTakePhoto}
+              >
+                <Ionicons name="camera" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chụp ảnh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Ionicons name="image" size={24} color="#63B35C" />
+                <Text style={styles.imagePickerButtonText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.imagePreviewContainer}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.imagesScrollContainer}
+                >
+                  {images.map((imageUri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          const newImages = [...images];
+                          newImages.splice(index, 1);
+                          setImages(newImages);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View
+                  style={{ alignItems: "center", justifyContent: "center" }}
+                >
+                  <Ionicons name="images-outline" size={32} color="#9CA3AF" />
+                  <Text style={{ color: "#6B7280", marginTop: 8 }}>
+                    Chưa có hình ảnh
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonCancel]}
+                onPress={() => {
+                  setCompleteModalVisible(false);
+                  setImages([]);
+                }}
+              >
+                <Text style={styles.buttonCancelText}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonConfirm]}
+                onPress={submitPickupConfirmation}
+                disabled={isLoadingRevicedPickUp}
+              >
+                {isLoadingRevicedPickUp ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonConfirmText}>Xác nhận</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -321,10 +519,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalView: {
-    margin: 20,
+    margin: 10,
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 35,
+    padding: 25,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -343,13 +541,18 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     width: 250,
-    height: 100,
-    marginBottom: 15,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
   },
   imagePickerButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   imagePickerButtonText: {
     marginLeft: 10,
@@ -388,33 +591,43 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   imagePreviewContainer: {
-    width: "100%",
-    minHeight: 120,
+    width: 250,
+    height: 180,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    padding: 10,
+    padding: 5,
+    overflow: "hidden",
+  },
+  imagesScrollContainer: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
   imageWrapper: {
-    width: 120,
-    height: 120,
+    width: 250,
+    height: 150,
     position: "relative",
+    marginRight: 12,
+    borderRadius: 8,
   },
   imagePreview: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
   },
   removeImageButton: {
     position: "absolute",
-    top: -10,
-    right: -10,
+    top: 5,
+    right: 5,
     backgroundColor: "white",
     borderRadius: 12,
+    zIndex: 1,
   },
 });
 

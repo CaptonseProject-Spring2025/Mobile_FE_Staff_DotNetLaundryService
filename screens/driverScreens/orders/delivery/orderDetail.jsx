@@ -443,7 +443,9 @@ const OrderDetail = ({ navigation, route }) => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
-      quality: 1,
+      quality: 0.5,
+      base64: false,
+      exif: false,
     });
 
     if (result.canceled) {
