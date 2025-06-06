@@ -921,8 +921,8 @@ const ChatScreen = () => {
           </View>
 
           <View style={styles.headerActions}>
-            {/* Notification Button */}
-            <TouchableOpacity 
+           
+            {/* <TouchableOpacity 
               style={styles.headerButton}
               onPress={toggleNotifications}
             >
@@ -936,10 +936,9 @@ const ChatScreen = () => {
               )}
             </TouchableOpacity>
 
-            {/* Menu Button */}
             <TouchableOpacity style={styles.headerButton}>
               <Ionicons name="ellipsis-vertical" size={24} color="#333" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
@@ -986,28 +985,6 @@ const ChatScreen = () => {
               <Text style={styles.headerStatus}>🔴 Offline</Text>
             )}
           </View>
-        </View>
-
-        <View style={styles.headerActions}>
-          {/* Notification Button */}
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={toggleNotifications}
-          >
-            <Ionicons name="notifications" size={24} color="#333" />
-            {unreadCount > 0 && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationBadgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Menu Button */}
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="ellipsis-vertical" size={24} color="#333" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -1337,7 +1314,7 @@ const styles = StyleSheet.create({
     maxWidth: "85%",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 10,
     elevation: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
