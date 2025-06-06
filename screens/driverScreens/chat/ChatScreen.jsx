@@ -270,14 +270,14 @@ const ChatScreen = () => {
       }
     });
 
-    // Handle message deletion
-    connection.on("MessageDeleted", (messageId) => {
-      setMessages(prevMessages => 
-        prevMessages.filter(msg => 
-          (msg.messageid || msg.Messageid) !== messageId
-        )
-      );
-    });
+    // Handle message deletion - DISABLED
+    // connection.on("MessageDeleted", (messageId) => {
+    //   setMessages(prevMessages => 
+    //     prevMessages.filter(msg => 
+    //       (msg.messageid || msg.Messageid) !== messageId
+    //     )
+    //   );
+    // });
 
     // Handle message read status - IMPROVED
     connection.on("MessageRead", (messageId) => {
@@ -362,7 +362,7 @@ const ChatScreen = () => {
       connection.off("ReceiveMessages");
       connection.off("UserTyping");
       connection.off("UserStoppedTyping");
-      connection.off("MessageDeleted");
+      // connection.off("MessageDeleted"); // Đã tắt
       connection.off("MessageRead");
       connection.off("ReceiveNotification");
       connection.off("UnreadNotificationCount");
@@ -736,7 +736,7 @@ const ChatScreen = () => {
 
     return (
       <TouchableOpacity
-        onLongPress={() => handleMessageLongPress(item)}
+        // onLongPress={() => handleMessageLongPress(item)} // Đã tắt chức năng xóa tin nhắn
         activeOpacity={0.8}
       >
         <View
@@ -1068,7 +1068,8 @@ const ChatScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Delete Message Modal - ENHANCED */}
+        {/* Delete Message Modal - DISABLED */}
+        {/* 
         <Modal
           visible={showDeleteModal}
           transparent={true}
@@ -1132,6 +1133,7 @@ const ChatScreen = () => {
             </View>
           </View>
         </Modal>
+        */}
 
         {/* Notifications Modal */}
         <Modal
