@@ -27,6 +27,16 @@ const ChatScreen = () => {
   const route = useRoute();
   const { conversationId, name, userId, currentUserId, avatar } = route.params;
   
+  // Debug messages state
+  useEffect(() => {
+    console.log("🔍 Messages state changed:", {
+      isArray: Array.isArray(messages),
+      length: messages?.length || 0,
+      type: typeof messages,
+      firstItem: messages?.[0] ? "exists" : "none"
+    });
+  }, [messages]);
+
   // Initialize SignalR connection
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
@@ -46,43 +56,103 @@ const ChatScreen = () => {
     };
   }, []);
 
-  // Listen for new messages from SignalR
+  // BULLETPROOF SignalR listeners
   useEffect(() => {
     if (!connection) return;
 
-    connection.on("ReceiveMessage", (newMessages) => {
-      console.log("Received messages:", newMessages);
-      setMessages(newMessages);
-      // Scroll to bottom after receiving new messages
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    });
+    const handleNewMessage = (messageData) => {
+      console.log("📨 New message received:", messageData);
+      
+      // Double check: messageData should be an object, not array
+      if (messageData && typeof messageData === 'object' && !Array.isArray(messageData)) {
+        setMessages(prevMessages => {
+          // Ensure prevMessages is always an array
+          const currentMessages = Array.isArray(prevMessages) ? prevMessages : [];
+          
+          // Check if message already exists to avoid duplicates
+          const messageId = messageData.messageid || messageData.Messageid;
+          if (messageId && currentMessages.some(msg => (msg.messageid || msg.Messageid) === messageId)) {
+            console.log("🔄 Message already exists, skipping");
+            return currentMessages;
+          }
+          
+          // Add new message and sort by creation date
+          const newMessages = [...currentMessages, messageData];
+          const sortedMessages = newMessages.sort((a, b) => {
+            const dateA = new Date(a.creationdate || a.Creationdate || 0);
+            const dateB = new Date(b.creationdate || b.Creationdate || 0);
+            return dateA - dateB;
+          });
+          
+          console.log("✅ Added new message, total:", sortedMessages.length);
+          return sortedMessages;
+        });
+        
+        // Scroll to bottom after adding message
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      } else {
+        console.error("❌ Invalid messageData received:", messageData);
+      }
+    };
+
+    const handleReceiveMessages = (messagesData) => {
+      console.log("📋 Received messages array:", messagesData);
+      
+      // Ensure messagesData is an array
+      if (Array.isArray(messagesData)) {
+        setMessages([...messagesData]);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      } else {
+        console.error("❌ Expected array but received:", typeof messagesData, messagesData);
+        // Set empty array as fallback
+        setMessages([]);
+      }
+    };
+
+    connection.on("ReceiveMessage", handleNewMessage);
+    connection.on("ReceiveMessages", handleReceiveMessages);
 
     return () => {
-      connection.off("ReceiveMessage");
+      connection.off("ReceiveMessage", handleNewMessage);
+      connection.off("ReceiveMessages", handleReceiveMessages);
     };
-  }, [connection]);
+  }, [connection, conversationId]);
 
-  // Join conversation and fetch message history
+  // Fetch initial messages
   useEffect(() => {
     if (connection && conversationId) {
       connection.invoke("JoinConversation", conversationId);
-      console.log("✅ Joined conversation:", conversationId);
-
+      
       const fetchMessages = async () => {
         try {
           setIsLoading(true);
+          console.log("🔄 Fetching initial messages for conversation:", conversationId);
+          
           const res = await axiosClient.get(`Conversations/messages/${conversationId}`);
-          if (res.data.success) {
-            setMessages(res.data.messages || []);
+          console.log("📥 API Response:", res.data);
+          
+          if (res.data && res.data.success) {
+            const messagesData = res.data.messages;
+            if (Array.isArray(messagesData)) {
+              console.log("✅ Setting initial messages, count:", messagesData.length);
+              setMessages([...messagesData]); // Force new array reference
+            } else {
+              console.warn("⚠️ Messages data is not an array:", typeof messagesData, messagesData);
+              setMessages([]);
+            }
+          } else {
+            console.warn("⚠️ API response not successful");
+            setMessages([]);
           }
         } catch (err) {
           console.error("❌ Fetch messages error:", err);
+          setMessages([]);
         } finally {
           setIsLoading(false);
-
-          // Scroll to bottom after loading messages
           setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: false });
           }, 100);
@@ -110,83 +180,42 @@ const ChatScreen = () => {
     }
   };
 
-  // Format the timestamp as relative time in Vietnamese
+  // SIMPLE format time
   const formatTime = (date) => {
     if (!date) return "";
-
-    const now = new Date();
-    const diffInMilliseconds = now - new Date(date);
-
-    // Less than a minute (giây - seconds)
-    const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 1 ? "vừa xong" : `${diffInSeconds} giây trước`;
+    try {
+      const now = new Date();
+      const messageDate = new Date(date);
+      const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
+      
+      if (diffInMinutes < 1) return "vừa xong";
+      if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
+      return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
+    } catch (error) {
+      return "";
     }
-
-    // Less than an hour (phút - minutes)
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} phút trước`;
-    }
-
-    // Less than a day (giờ - hours)
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) {
-      return `${diffInHours} giờ trước`;
-    }
-
-    // Less than a week (ngày - days)
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays} ngày trước`;
-    }
-
-    // Less than a month (tuần - weeks)
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) {
-      return `${diffInWeeks} tuần trước`;
-    }
-
-    // Less than a year (tháng - months)
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) {
-      return `${diffInMonths} tháng trước`;
-    }
-
-    // More than a year (năm - years)
-    const diffInYears = Math.floor(diffInDays / 365);
-    return `${diffInYears} năm trước`;
   };
 
-  const renderItem = ({ item }) => {
-    // Check if it's a date separator
-    if (item.isDateSeparator) {
-      return (
-        <View style={styles.dateSeparator}>
-          <Text style={styles.dateSeparatorText}>{formatDate(item.date)}</Text>
-        </View>
-      );
-    }
+  // SIMPLE render - NO GROUPING
+  const renderMessage = ({ item, index }) => {
+    if (!item) return null;
 
-    // For real API messages
-    const isCurrentUser = item.userid === currentUserId;
-    const messageText = item.message1 || item.message;
-    const messageDate = item.creationdate
-      ? new Date(item.creationdate)
-      : new Date();
+    const isCurrentUser = (item.userid || item.Userid) === currentUserId;
+    const messageText = item.message1 || item.Message1 || "";
+    const messageDate = item.creationdate || item.Creationdate;
+    const userAvatar = item.avatar || item.Avatar;
 
     return (
       <View
         style={[
           styles.messageContainer,
-          isCurrentUser
-            ? styles.currentUserMessageContainer
-            : styles.otherUserMessageContainer,
+          isCurrentUser ? styles.currentUserMessageContainer : styles.otherUserMessageContainer,
         ]}
       >
         {!isCurrentUser && (
           <Image
-            source={{ uri: item.avatar || avatar || "https://randomuser.me/api/portraits/lego/1.jpg" }}
+            source={{ uri: userAvatar || avatar || "https://randomuser.me/api/portraits/lego/1.jpg" }}
             style={styles.messageAvatar}
           />
         )}
@@ -199,9 +228,7 @@ const ChatScreen = () => {
           <Text
             style={[
               styles.messageText,
-              isCurrentUser
-                ? styles.currentUserMessageText
-                : styles.otherUserMessageText,
+              isCurrentUser ? styles.currentUserMessageText : styles.otherUserMessageText,
             ]}
           >
             {messageText}
@@ -209,9 +236,7 @@ const ChatScreen = () => {
           <Text
             style={[
               styles.timeText,
-              isCurrentUser
-                ? styles.currentUserTimeText
-                : styles.otherUserTimeText,
+              isCurrentUser ? styles.currentUserTimeText : styles.otherUserTimeText,
             ]}
           >
             {formatTime(messageDate)}
@@ -221,68 +246,10 @@ const ChatScreen = () => {
     );
   };
 
-  // Format date for the date separator
-  const formatDate = (date) => {
-    if (!date) return "";
-
-    const messageDate = new Date(date);
-    const today = new Date();
-
-    if (messageDate.toDateString() === today.toDateString()) {
-      return "Hôm nay";
-    }
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (messageDate.toDateString() === yesterday.toDateString()) {
-      return "Hôm qua";
-    }
-
-    return messageDate.toLocaleDateString("vi-VN");
-  };
-
-  // Group messages by date
-  const groupMessagesByDate = () => {
-    if (!messages || messages.length === 0) return [];
-
-    const groups = [];
-    let currentDate = null;
-
-    // Sort messages by creation date if they have one
-    const sortedMessages = [...messages].sort((a, b) => {
-      const dateA = a.creationdate ? new Date(a.creationdate) : new Date();
-      const dateB = b.creationdate ? new Date(b.creationdate) : new Date();
-      return dateA - dateB;
-    });
-
-    sortedMessages.forEach((message) => {
-      const messageDate = message.creationdate
-        ? new Date(message.creationdate)
-        : new Date();
-      const dateString = messageDate.toDateString();
-
-      if (dateString !== currentDate) {
-        currentDate = dateString;
-        groups.push({
-          isDateSeparator: true,
-          date: messageDate,
-          _id: `ngày-${dateString}`,
-        });
-      }
-
-      groups.push(message);
-    });
-
-    return groups;
-  };
-
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-        {/* Chat Header */}
         <View style={styles.header}>
           <View style={styles.headerProfile}>
             <Image 
@@ -294,7 +261,6 @@ const ChatScreen = () => {
             </View>
           </View>
         </View>
-
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#63B35C" />
           <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
@@ -307,7 +273,6 @@ const ChatScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Chat Header */}
       <View style={styles.header}>
         <View style={styles.headerProfile}>
           <Image 
@@ -327,13 +292,17 @@ const ChatScreen = () => {
       >
         <FlatList
           ref={flatListRef}
-          data={groupMessagesByDate()}
-          renderItem={renderItem}
-          keyExtractor={(item, index) =>
-            (item._id || item.id || index).toString()
-          }
+          data={Array.isArray(messages) ? messages : []}
+          renderItem={renderMessage}
+          keyExtractor={(item, index) => {
+            const key = item?.messageid || item?.Messageid || `message-${index}`;
+            return String(key);
+          }}
           contentContainerStyle={styles.messagesContainer}
           showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => {
+            console.log("📊 FlatList content changed, messages count:", messages?.length || 0);
+          }}
         />
 
         <View style={styles.inputContainer}>
