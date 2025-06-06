@@ -836,7 +836,7 @@ const OrderDetail = ({ navigation, route }) => {
               paddingHorizontal: 20,
             }}
           >
-            <Text style={styles.sectionTitle}>Địa chỉ nhận hàng</Text>
+            <Text style={styles.sectionTitle}>Địa chỉ giao hàng</Text>
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("AddressDeliveryNavigateMap", {

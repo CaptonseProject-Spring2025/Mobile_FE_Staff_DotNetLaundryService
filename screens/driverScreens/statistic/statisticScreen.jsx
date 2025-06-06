@@ -102,13 +102,28 @@ const StatisticScreen = () => {
       assignmentStatusLabel = item.assignmentStatus || "";
     }
 
+    const PaymentTranlste = (paymentName) => {
+      if (paymentName === "CASH") {
+        return "Tiền mặt";
+      } else if (paymentName === "PayOS") {
+        return "Chuyển khoản";
+      } else {
+        return paymentName;
+      }
+    };
+
     return (
       <View style={styles.taskItem}>
-        <View>
+        <View className="gap-y-2">
           <Text style={styles.orderCode}>Mã đơn: {item.orderId}</Text>
           <Text className="text-base font-medium">
             Loại task: {assignmentStatusLabel}
           </Text>
+          {item.paymentName && (
+            <Text className="text-base font-medium">
+              Thanh toán: {PaymentTranlste(item.paymentName)}
+            </Text>
+          )}
           <Text style={styles.taskTime}>
             {formatDateTime(item.completedAt)}
           </Text>

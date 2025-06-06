@@ -273,9 +273,26 @@ const OrderDetailScreen = ({ route, navigation }) => {
       return;
     }
     try {
-      await axiosClient.post(
-        `staff/orders/checking/confirm?orderId=${orderId}&notes=${note}`
-      );
+      // Create FormData object
+      const formData = new FormData();
+      // Append all photos to formData
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        formData.append("files", {
+          uri: photo.uri,
+          type: photo.mimeType || "image/jpeg",
+          name: photo.fileName || `photo_${i + 1}.jpg`,
+        });
+      }
+      
+      // Send request with FormData
+      await axiosClient.post(`staff/orders/checking/confirm?orderId=${orderId}&notes=${note}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
+        },
+      });
+
       Alert.alert("Thành công", "Đơn hàng đã được xác nhận!", [
         {
           text: "OK",
@@ -285,8 +302,15 @@ const OrderDetailScreen = ({ route, navigation }) => {
         },
       ]);
     } catch (error) {
-      console.error(error);
-      Alert.alert("Lỗi", "Không thể xác nhận đơn hàng. Vui lòng thử lại.");
+      console.error("Error confirming order:", error.response.data.title);
+      let errorMessage = error.response.data.message;
+      if (error.response) {
+        if (error.response.status === 413) {
+          errorMessage =
+            "Kích thước ảnh quá lớn. Vui lòng giảm số lượng ảnh hoặc chụp với độ phân giải thấp hơn.";
+        }
+      }
+      Alert.alert("Lỗi", errorMessage);
     } finally {
       setIsConfirming(false);
     }
