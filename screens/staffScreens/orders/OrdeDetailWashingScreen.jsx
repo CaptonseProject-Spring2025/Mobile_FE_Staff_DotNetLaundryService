@@ -604,7 +604,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
 
             {/* Action Buttons */}
             <View className="mb-4">
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={handleWashingUpdate}
                 disabled={isUploadingWashingUpdate}
                 className={`mb-3 py-3 rounded-lg items-center justify-center ${
@@ -626,7 +626,7 @@ const OrderDetailWashingScreen = ({ route, navigation }) => {
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <TouchableOpacity
                 onPress={handleWashingConfirm}

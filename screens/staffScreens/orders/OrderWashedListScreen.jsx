@@ -268,12 +268,6 @@ function OrderWashedListScreen({ navigation }) {
                         {customerDetail.email}
                       </Text>
                     )}
-                    <View className="flex-row items-center mt-1">
-                      <Ionicons name="star" size={14} color="#F59E0B" />
-                      <Text className="text-gray-500 text-xs ml-1">
-                        Điểm thưởng: {customerDetail.rewardPoints || 0}
-                      </Text>
-                    </View>
                   </>
                 )}
               </View>

@@ -329,16 +329,24 @@ const OrderDetail = ({ navigation, route }) => {
       formData.append("notes", completeNote);
 
       // Append image with proper structure for FormData
-      const imageUri = images[0];
-      const imageName = imageUri.split("/").pop();
-      const imageType =
-        "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
+      for (let i = 0; i < images.length; i++) {
+        const imageUri = images[i];
+        const imageName = imageUri.split("/").pop();
+        const imageType =
+          "image/" + (imageName.split(".").pop() === "png" ? "png" : "jpeg");
 
-      formData.append("image", {
-        uri: imageUri,
-        name: imageName,
-        type: imageType,
-      });
+        formData.append("files", {
+          uri: imageUri,
+          name: imageName,
+          type: imageType,
+        });
+      }
+
+      console.log(
+        "Form data prepared for pickup confirmation with",
+        images.length,
+        "images"
+      );
 
       setCompleteModalVisible(false);
       // Call the API

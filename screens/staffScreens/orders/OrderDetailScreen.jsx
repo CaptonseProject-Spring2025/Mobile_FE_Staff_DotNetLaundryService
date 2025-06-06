@@ -62,9 +62,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
       quality: 0.5,
-      aspect: [4, 3],
       exif: false,
     });
 
@@ -171,11 +169,6 @@ const OrderDetailScreen = ({ route, navigation }) => {
           name: photo.fileName || `photo_${i + 1}.jpg`,
         });
       }
-
-      // Log tổng kích thước
-      console.log(
-        `Tổng kích thước ảnh: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
-      );
 
       // Nếu tổng kích thước quá lớn, hiển thị cảnh báo
       if (totalSize > 10 * 1024 * 1024) {
@@ -314,7 +307,8 @@ const OrderDetailScreen = ({ route, navigation }) => {
         >
           <ScrollView className="flex-1 p-4">
             {/* Order Info Card */}
-            <View className="bg-white rounded-xl shadow-sm p-5 mb-5">              <View className="flex-row justify-between items-center mb-3">
+            <View className="bg-white rounded-xl shadow-sm p-5 mb-5">
+              <View className="flex-row justify-between items-center mb-3">
                 <View className="bg-green-50 px-3 py-1 rounded-full">
                   <Text className="text-green-600 font-medium">
                     Mã đơn: {orderId}
@@ -485,7 +479,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
             {/* Action Buttons */}
             <View className="mb-8">
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={handleUploadPhoto}
                 disabled={isUploading}
                 className={`mb-3 py-3 rounded-lg items-center justify-center ${
@@ -511,7 +505,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <TouchableOpacity
                 onPress={handleConfirmOrder}
