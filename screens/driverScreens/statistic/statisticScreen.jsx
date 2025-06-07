@@ -103,7 +103,7 @@ const StatisticScreen = () => {
     }
 
     const PaymentTranlste = (paymentName) => {
-      if (paymentName === "CASH") {
+      if (paymentName === "Cash") {
         return "Tiền mặt";
       } else if (paymentName === "PayOS") {
         return "Chuyển khoản";
