@@ -146,20 +146,17 @@ function OrderListCheckedScreen({ navigation }) {
 
       if (photos && photos.length > 0) {
         console.log("Opening photo modal with", photos.length, "photos");
+        // First update the local state with the fetched photos directly
+        useCheckOrderStore.setState({ orderStatusPhotos: photos });
+        // Then open the modal
         setPhotoModalVisible(true);
       } else {
         console.log("No photos found");
-        Alert.alert(
-          "Thông báo",
-          "Không tìm thấy hình ảnh đính kèm cho trạng thái này."
-        );
+        Alert.alert("Thông báo", "Không có hình ảnh nào cho trạng thái này");
       }
     } catch (error) {
       console.error("Error fetching status photos:", error);
-      Alert.alert(
-        "Lỗi",
-        "Không thể lấy hình ảnh đính kèm. Vui lòng thử lại sau."
-      );
+      Alert.alert("Lỗi", "Không thể tải hình ảnh. Vui lòng thử lại sau.");
     }
   };
 
@@ -260,12 +257,6 @@ function OrderListCheckedScreen({ navigation }) {
                         {customerDetail.email}
                       </Text>
                     )}
-                    <View className="flex-row items-center mt-1">
-                      <Ionicons name="star" size={14} color="#F59E0B" />
-                      <Text className="text-gray-500 text-xs ml-1">
-                        Điểm thưởng: {customerDetail.rewardPoints || 0}
-                      </Text>
-                    </View>
                   </>
                 )}
               </View>

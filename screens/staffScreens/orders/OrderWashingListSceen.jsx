@@ -140,25 +140,22 @@ function OrderWashingListScreen({ navigation }) {
     setSelectedStatusHistoryId(statusHistoryId);
     try {
       console.log("Fetching photos for status history ID:", statusHistoryId);
-      await fetchOrderStatusPhotos(statusHistoryId);
+      const photos = await fetchOrderStatusPhotos(statusHistoryId);
+      console.log("Photos received:", photos);
 
-      // Check if photos were successfully fetched
-      if (orderStatusPhotos && orderStatusPhotos.length > 0) {
-        console.log("Photos available:", orderStatusPhotos);
+      if (photos && photos.length > 0) {
+        console.log("Opening photo modal with", photos.length, "photos");
+        // First update the local state with the fetched photos directly
+        useCheckOrderStore.setState({ orderStatusPhotos: photos });
+        // Then open the modal
         setPhotoModalVisible(true);
       } else {
         console.log("No photos found");
-        Alert.alert(
-          "Thông báo",
-          "Không tìm thấy hình ảnh đính kèm cho trạng thái này."
-        );
+        Alert.alert("Thông báo", "Không có hình ảnh nào cho trạng thái này");
       }
     } catch (error) {
       console.error("Error fetching status photos:", error);
-      Alert.alert(
-        "Lỗi",
-        "Không thể lấy hình ảnh đính kèm. Vui lòng thử lại sau."
-      );
+      Alert.alert("Lỗi", "Không thể tải hình ảnh. Vui lòng thử lại sau.");
     }
   };
 
